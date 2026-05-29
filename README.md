@@ -51,6 +51,12 @@ The codebase is structured to serve as a robust, scalable foundation, preparing 
 - **Secure Self-Service Cancellations**: Customers can securely cancel their own orders if they are still in `Pending` or `Confirmed` status. The system automatically restocks product database inventory levels and marks payment statuses as `Refunded` for Razorpay transactions.
 - **Printable Cash Memo Invoices**: Custom printable receipt route (`/orders/:id/invoice`) display item descriptions, 18% inclusive GST rates, shipping rates, and savings. Leverages specialized printing CSS media directives (`@media print`) to strip navbars, footers, buttons, and trigger the native browser print menu (`window.print()`) instantly on mount.
 
+### ⭐ Customer Reviews & Dynamic Ratings
+- **Dynamic Star-Rating Selector**: Highly interactive five-star selector inside the write-a-review panel featuring full hover and active color transitions.
+- **Visual E-Commerce Statistics Card**: Computes and displays dynamic overall rating metrics and 5-star to 1-star percentage distribution progress bars next to the comments feed in a polished dual-column layout.
+- **Auto-Loading Forms Pre-Population**: The application automatically checks for existing user feedback on visited product pages, pre-populating comment texts and star selections while shifting submit actions to "Update Review" mode.
+- **Inline Customer Edits & Authorized Moderations**: Review authors can trigger pencil edit shortcuts (scrolling and focusing textareas smoothly) or permanently delete comments. Platform administrators can execute moderator removals next to any review, automatically updating product average ratings instantly.
+
 ---
 
 ## 🛠 Tech Stack
