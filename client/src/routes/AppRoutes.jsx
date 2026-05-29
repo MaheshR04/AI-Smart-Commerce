@@ -8,6 +8,7 @@ import Wishlist from '../pages/Wishlist';
 import Checkout from '../pages/Checkout';
 import OrderHistory from '../pages/OrderHistory';
 import AdminDashboard from '../pages/AdminDashboard';
+import Profile from '../pages/Profile';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 export const AppRoutes = () => {
@@ -20,6 +21,14 @@ export const AppRoutes = () => {
       <Route path="/products/:id" element={<ProductDetails />} />
 
       {/* Protected User Pages */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/cart"
         element={

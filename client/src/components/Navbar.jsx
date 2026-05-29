@@ -137,6 +137,15 @@ export const Navbar = () => {
                       )}
 
                       <Link
+                        to="/profile"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-sky-50 hover:text-sky-600 transition-colors"
+                        onClick={() => setUserDropdownOpen(false)}
+                      >
+                        <UserIcon className="w-4 h-4 text-sky-500" />
+                        My Profile
+                      </Link>
+
+                      <Link
                         to="/orders"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-sky-50 hover:text-sky-600 transition-colors"
                         onClick={() => setUserDropdownOpen(false)}
@@ -234,6 +243,15 @@ export const Navbar = () => {
                     Admin Dashboard
                   </Link>
                 )}
+
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-slate-50 text-sm font-medium text-slate-700"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <UserIcon className="w-4 h-4 text-sky-500" />
+                  My Profile
+                </Link>
 
                 <Link
                   to="/orders"
