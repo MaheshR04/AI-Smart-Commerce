@@ -4,12 +4,13 @@ import { ShopContext } from '../context/ShopContext';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import ReviewSection from '../components/ReviewSection';
-import { Heart, ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronLeft } from 'lucide-react';
+import ProductCard from '../components/ProductCard';
+import { Heart, ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronLeft, Eye, Sparkles } from 'lucide-react';
 import API from '../services/api';
 
 export const ProductDetails = () => {
   const { id } = useParams();
-  const { toggleWishlist, isInWishlist } = useContext(ShopContext);
+  const { toggleWishlist, isInWishlist, products } = useContext(ShopContext);
   const { addToCart } = useContext(CartContext);
   const { token } = useContext(AuthContext);
 
@@ -20,6 +21,9 @@ export const ProductDetails = () => {
   
   const [addingToCart, setAddingToCart] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [recentItems, setRecentItems] = useState([]);
   
   const navigate = useNavigate();
 
@@ -43,6 +47,45 @@ export const ProductDetails = () => {
       fetchProduct();
     }
   }, [id]);
+
+  // Log viewed product to local storage
+  useEffect(() => {
+    if (product?._id) {
+      let viewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+      viewed = viewed.filter((vid) => vid !== product._id);
+      viewed.unshift(product._id);
+      localStorage.setItem('recentlyViewed', JSON.stringify(viewed.slice(0, 10)));
+    }
+  }, [product]);
+
+  // Load related products (same category, excluding current product)
+  useEffect(() => {
+    const fetchRelated = async () => {
+      if (!product?.category) return;
+      try {
+        const response = await API.get('/products', {
+          params: { category: product.category, limit: 5 }
+        });
+        const filtered = response.data.data.filter((p) => p._id !== product._id);
+        setRelatedProducts(filtered);
+      } catch (err) {
+        console.error('Failed to load related products:', err.message);
+      }
+    };
+    fetchRelated();
+  }, [product]);
+
+  // Load recently viewed products details
+  useEffect(() => {
+    const ids = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+    if (ids.length > 0 && products.length > 0) {
+      const items = ids
+        .filter((vid) => vid !== product?._id)
+        .map((vid) => products.find((p) => p._id === vid))
+        .filter(Boolean);
+      setRecentItems(items.slice(0, 4));
+    }
+  }, [products, product]);
 
   if (loading) {
     return (
@@ -106,7 +149,6 @@ export const ProductDetails = () => {
     }
   };
 
-  // Render static/active stars based on rating
   const renderStars = (ratingVal) => {
     const stars = [];
     const floorRating = Math.floor(ratingVal || 0);
@@ -134,14 +176,14 @@ export const ProductDetails = () => {
       </div>
 
       {/* Main product visual grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start animate-fade-in">
         
-        {/* Left Side: Images Viewer */}
+        {/* Left Side: Product Gallery */}
         <div className="space-y-4">
           
           {/* Main active image preview box */}
-          <div className="aspect-square bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm relative">
-            <img src={activeImage} alt={name} className="w-full h-full object-cover" />
+          <div className="aspect-square bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm relative group">
+            <img src={activeImage} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             
             {discountPrice > 0 && (
               <span className="absolute top-4 left-4 z-10 px-2.5 py-1 text-xs font-bold text-white bg-rose-500 rounded-lg shadow-sm">
@@ -152,12 +194,12 @@ export const ProductDetails = () => {
 
           {/* Thumbnail strip selection */}
           {images.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-1">
+            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
               {images.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImage(img)}
-                  className={`aspect-square w-20 rounded-xl border overflow-hidden flex-shrink-0 bg-white transition-all ${
+                  className={`aspect-square w-20 rounded-xl border overflow-hidden flex-shrink-0 bg-white transition-all duration-300 hover:scale-[1.02] cursor-pointer ${
                     activeImage === img ? 'border-sky-500 ring-2 ring-sky-100' : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
@@ -265,7 +307,7 @@ export const ProductDetails = () => {
                 <button
                   onClick={handleAddToCart}
                   disabled={addingToCart}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white rounded-xl font-bold shadow-md shadow-sky-100 active:scale-95 disabled:opacity-50 transition-all duration-200"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white rounded-xl font-bold shadow-md shadow-sky-100 active:scale-95 disabled:opacity-50 transition-all duration-200 cursor-pointer"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   {addingToCart ? 'Adding to Cart...' : 'Add to Cart'}
@@ -274,7 +316,7 @@ export const ProductDetails = () => {
                 <button
                   disabled={wishlistLoading}
                   onClick={handleWishlistClick}
-                  className={`px-6 py-3 border rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-200 active:scale-95 ${
+                  className={`px-6 py-3 border rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
                     isProductInWishlist
                       ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
                       : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -309,7 +351,7 @@ export const ProductDetails = () => {
 
       {/* Specifications list section */}
       {specifications && specifications.length > 0 && (
-        <section className="space-y-4 pt-6 border-t border-slate-100">
+        <section className="space-y-4 pt-6 border-t border-slate-100 animate-fade-in">
           <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Product Specifications</h3>
           <div className="bg-white border border-slate-200/50 rounded-2xl overflow-hidden shadow-sm">
             <div className="divide-y divide-slate-100">
@@ -320,6 +362,36 @@ export const ProductDetails = () => {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* Related Products Section */}
+      {relatedProducts.length > 0 && (
+        <section className="space-y-4 pt-8 border-t border-slate-100 animate-fade-in">
+          <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-sky-500" />
+            Related Products
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {relatedProducts.slice(0, 4).map((prod) => (
+              <ProductCard key={prod._id} product={prod} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Recently Viewed Products Section */}
+      {recentItems.length > 0 && (
+        <section className="space-y-4 pt-8 border-t border-slate-100 animate-fade-in">
+          <h3 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+            <Eye className="w-5 h-5 text-indigo-500" />
+            Recently Viewed
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {recentItems.map((prod) => (
+              <ProductCard key={prod._id} product={prod} />
+            ))}
           </div>
         </section>
       )}
