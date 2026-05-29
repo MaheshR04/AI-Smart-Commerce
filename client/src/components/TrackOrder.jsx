@@ -4,6 +4,7 @@ export const TrackOrder = ({ orderStatus }) => {
   // Define milestones and statuses order mapping
   const steps = [
     { label: 'Pending', status: 'Pending', icon: Hourglass },
+    { label: 'Confirmed', status: 'Confirmed', icon: CheckCircle2 },
     { label: 'Processing', status: 'Processing', icon: Loader2 },
     { label: 'Shipped', status: 'Shipped', icon: Truck },
     { label: 'Delivered', status: 'Delivered', icon: PackageCheck },
@@ -14,12 +15,14 @@ export const TrackOrder = ({ orderStatus }) => {
     switch (status) {
       case 'Pending':
         return 0;
-      case 'Processing':
+      case 'Confirmed':
         return 1;
-      case 'Shipped':
+      case 'Processing':
         return 2;
-      case 'Delivered':
+      case 'Shipped':
         return 3;
+      case 'Delivered':
+        return 4;
       case 'Cancelled':
         return -1;
       default:

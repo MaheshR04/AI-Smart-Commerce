@@ -933,12 +933,15 @@ export const AdminDashboard = () => {
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                               : ord.orderStatus === 'Cancelled'
                               ? 'bg-rose-50 text-rose-600 border-rose-100'
+                              : ord.orderStatus === 'Confirmed'
+                              ? 'bg-sky-50 text-sky-700 border-sky-100'
                               : 'bg-amber-50 text-amber-600 border-amber-100'
                           }`}
                           value={ord.orderStatus}
                           onChange={(e) => handleOrderStatusChange(ord._id, e.target.value)}
                         >
                           <option value="Pending">Pending</option>
+                          <option value="Confirmed">Confirmed</option>
                           <option value="Processing">Processing</option>
                           <option value="Shipped">Shipped</option>
                           <option value="Delivered">Delivered</option>

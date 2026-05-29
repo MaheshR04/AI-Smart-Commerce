@@ -294,3 +294,54 @@ export const updateOrderStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc    Cancel order (Customer self-service cancellation)
+ * @route   PUT /api/orders/:id/cancel
+ * @access  Private
+ */
+export const cancelOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      res.status(404);
+      throw new Error('Order not found');
+    }
+
+    // Ensure the order belongs to the logged-in user
+    if (order.userId.toString() !== req.user._id.toString()) {
+      res.status(401);
+      throw new Error('Not authorized to cancel this order');
+    }
+
+    // Only allow cancellation if order is not Shipped or Delivered
+    if (['Shipped', 'Delivered', 'Cancelled'].includes(order.orderStatus)) {
+      res.status(400);
+      throw new Error(`Cannot cancel order once it is ${order.orderStatus}`);
+    }
+
+    order.orderStatus = 'Cancelled';
+    
+    // Set paymentDetails status failed or refunded if it was paid
+    if (order.paymentMethod === 'Razorpay' && order.paymentDetails.paymentStatus === 'Completed') {
+      order.paymentDetails.paymentStatus = 'Refunded'; // simulate refund
+    }
+
+    // Restock the product items
+    for (const item of order.products) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { stock: item.quantity },
+      });
+    }
+
+    const updatedOrder = await order.save();
+    res.json({
+      success: true,
+      message: 'Order cancelled successfully',
+      data: updatedOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

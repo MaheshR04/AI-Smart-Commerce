@@ -1,4 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import TrackOrder from '../components/TrackOrder';
 import { User, ShieldCheck, Mail, Lock, Settings, KeyRound, CheckCircle, ShoppingBag, MapPin, MessageSquare, Plus, Trash2, Home, Building, Phone, Calendar, Heart, Edit3, Star, X } from 'lucide-react';
@@ -200,6 +201,17 @@ export const Profile = () => {
       clearSuccess();
     } catch (err) {
       setError('Failed to set default address.');
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order? Stock levels will be restored and any online payments will be refunded.')) return;
+    try {
+      await API.put(`/orders/${orderId}/cancel`);
+      alert('Order cancelled successfully.');
+      loadTabDetails();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel order.');
     }
   };
 
@@ -473,6 +485,25 @@ export const Profile = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {ord.orderStatus !== 'Cancelled' && (
+                        <Link
+                          to={`/orders/${ord._id}/invoice`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 transition-all active:scale-95 cursor-pointer"
+                        >
+                          Invoice
+                        </Link>
+                      )}
+                      
+                      {['Pending', 'Confirmed'].includes(ord.orderStatus) && (
+                        <button
+                          onClick={() => handleCancelOrder(ord._id)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-500 hover:text-rose-600 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl border border-rose-100 transition-all active:scale-95 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      )}
+
                       <button
                         onClick={() => setExpandedOrderId(expandedOrderId === ord._id ? '' : ord._id)}
                         className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-600 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-xl border border-sky-100 transition-all active:scale-95 cursor-pointer"

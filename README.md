@@ -44,7 +44,12 @@ The codebase is structured to serve as a robust, scalable foundation, preparing 
 ### 🛠 Administrative Control Center
 - **Product Inventory Manager**: Complete CRUD workspace with dynamic specifications key-value fields.
 - **Category Creator**: Create product directories with direct Cloudinary uploads.
-- **Global Order Tracker**: Edit global dispatch statuses (`Pending`, `Processing`, `Shipped`, `Delivered`, `Cancelled`) using dropdown controls.
+- **Global Order Tracker**: Edit global dispatch statuses (`Pending`, `Confirmed`, `Processing`, `Shipped`, `Delivered`, `Cancelled`) using dropdown controls color-coded to custom themes.
+
+### 📦 Order Management & Printable Invoices
+- **Milestone Order Flow Tracking**: Integrated the `Confirmed` stage into the order lifecycle: `Pending ➡️ Confirmed ➡️ Processing ➡️ Shipped ➡️ Delivered` with matching timeline indicators.
+- **Secure Self-Service Cancellations**: Customers can securely cancel their own orders if they are still in `Pending` or `Confirmed` status. The system automatically restocks product database inventory levels and marks payment statuses as `Refunded` for Razorpay transactions.
+- **Printable Cash Memo Invoices**: Custom printable receipt route (`/orders/:id/invoice`) display item descriptions, 18% inclusive GST rates, shipping rates, and savings. Leverages specialized printing CSS media directives (`@media print`) to strip navbars, footers, buttons, and trigger the native browser print menu (`window.print()`) instantly on mount.
 
 ---
 

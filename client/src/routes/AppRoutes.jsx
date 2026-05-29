@@ -8,6 +8,7 @@ import Wishlist from '../pages/Wishlist';
 import Checkout from '../pages/Checkout';
 import PaymentSuccess from '../pages/PaymentSuccess';
 import OrderHistory from '../pages/OrderHistory';
+import Invoice from '../pages/Invoice';
 import AdminDashboard from '../pages/AdminDashboard';
 import Profile from '../pages/Profile';
 import ProtectedRoute from '../components/ProtectedRoute';
@@ -67,6 +68,14 @@ export const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <OrderHistory />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/orders/:id/invoice"
+        element={
+          <ProtectedRoute>
+            <Invoice />
           </ProtectedRoute>
         }
       />

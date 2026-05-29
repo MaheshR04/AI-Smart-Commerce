@@ -23,6 +23,17 @@ export const OrderHistory = () => {
     }
   };
 
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('Are you sure you want to cancel this order? Stock levels will be restored and any online payments will be refunded.')) return;
+    try {
+      await API.put(`/orders/${orderId}/cancel`);
+      alert('Order cancelled successfully.');
+      fetchOrders();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to cancel order.');
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -33,6 +44,8 @@ export const OrderHistory = () => {
     switch (status) {
       case 'Delivered':
         return base + 'bg-emerald-50 text-emerald-600 border-emerald-100';
+      case 'Confirmed':
+        return base + 'bg-sky-50 text-sky-600 border-sky-100';
       case 'Processing':
       case 'Shipped':
         return base + 'bg-amber-50 text-amber-600 border-amber-100';
@@ -121,6 +134,29 @@ export const OrderHistory = () => {
                   <span className="text-sm font-extrabold text-slate-800 sm:text-base">
                     Total: ₹{ord.totalAmount.toLocaleString('en-IN')}
                   </span>
+                  
+                  <div className="flex gap-2 mt-1">
+                    {/* Invoice Download Link */}
+                    {ord.orderStatus !== 'Cancelled' && (
+                      <Link
+                        to={`/orders/${ord._id}/invoice`}
+                        target="_blank"
+                        className="text-[10px] font-bold text-sky-600 hover:text-sky-700 bg-sky-50 hover:bg-sky-100/50 border border-sky-100 hover:border-sky-200 px-2 py-0.5 rounded-lg transition-colors uppercase tracking-wider cursor-pointer"
+                      >
+                        Invoice
+                      </Link>
+                    )}
+
+                    {/* Cancel Order Button */}
+                    {['Pending', 'Confirmed'].includes(ord.orderStatus) && (
+                      <button
+                        onClick={() => handleCancelOrder(ord._id)}
+                        className="text-[10px] font-bold text-rose-500 hover:text-rose-600 bg-rose-50 hover:bg-rose-100/50 border border-rose-100 hover:border-rose-200 px-2 py-0.5 rounded-lg transition-colors uppercase tracking-wider cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                 </div>
 
               </div>
