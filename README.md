@@ -1,0 +1,137 @@
+# SmartCommerce - Full-Stack MERN E-commerce Engine
+
+SmartCommerce is a modern, high-performance e-commerce platform built on the MERN stack (MongoDB, Express, React, Node.js). Designed as a premium shopping engine inspired by Amazon and Flipkart, it features secure JWT authentication, multi-criteria catalog searches, dynamic review aggregates, wishlists, shopping carts, and automated Razorpay payments verification.
+
+The codebase is structured to serve as a robust, scalable foundation, preparing you for seamless integrations of future AI capabilities (such as search vector embeddings, recommendation engines, and customer support bots).
+
+---
+
+## 🚀 Key Features
+
+### 🔐 Security & Access Controls
+- **JWT Session Security**: Secure API endpoints guarded by custom JSON Web Token parsing middlewares.
+- **Bcrypt Hashing**: User credentials securely encrypted using pre-save hashing hooks.
+- **Administrative Roles**: Strict routing guards separating Customer pages from Admin tools.
+
+### 📦 Robust Database Collections (Mongoose)
+- **Advanced Product Catalog**: Supports text indexing, pricing validations, stock levels, and embedded specifications array.
+- **Dynamic Rating Aggregations**: Review submissions automatically compute and cache product average ratings.
+- **Shopping Cart & Wishlist**: Real-time local state synchronization persisting to the database.
+- **Transactions Snapshots**: Capture static item prices at checkout to insulate against future pricing changes.
+
+### 💳 Dynamic Order Checkout
+- **Razorpay Payments**: Seamless frontend SDK integration with cryptographically secure backend signature checks.
+- **Cash on Delivery (COD)**: Alternate local payment method with automated delivered-cash reconciliations.
+- **Restocking Logic**: Automatic stock level adjustments on order placement and restocking on cancel.
+
+### 🛠 Administrative Control Center
+- **Product Inventory Manager**: Complete CRUD workspace with dynamic specifications key-value fields.
+- **Category Creator**: Create product directories with direct Cloudinary uploads.
+- **Global Order Tracker**: Edit global dispatch statuses (`Pending`, `Processing`, `Shipped`, `Delivered`, `Cancelled`) using dropdown controls.
+
+---
+
+## 🛠 Tech Stack
+
+- **Frontend**: React (Vite), Tailwind CSS, React Router DOM, Axios, Context API, Lucide Icons
+- **Backend**: Node.js, Express.js
+- **Database**: MongoDB Atlas, Mongoose
+- **Image Cloud Storage**: Cloudinary SDK
+- **Payment Processing**: Razorpay Gateway Integration
+
+---
+
+## 📂 Codebase Directory Layout
+
+```
+AI-Smart-Commerce/
+├── server/                        # Node.js + Express.js API
+│   ├── config/                    # Mongoose, Cloudinary & Razorpay configurations
+│   ├── controllers/               # API route handlers
+│   ├── middleware/                # Protect routers, admin checks, and file uploads
+│   ├── models/                    # MongoDB schemas
+│   ├── routes/                    # API routes
+│   ├── seed.js                    # Mock database seeder
+│   └── server.js                  # Main server entrypoint
+│
+└── client/                        # React SPA (Vite + Tailwind)
+    ├── src/
+    │   ├── components/            # Headers, Footers, ProductCards, ReviewForms
+    │   ├── context/               # State providers (Auth, Shop, Cart)
+    │   ├── pages/                 # Home, Detail Sheets, Carts, Orders, Admins
+    │   ├── routes/                # Router mapping (AppRoutes.jsx)
+    │   └── services/              # Centralized Axios client (api.js)
+    ├── tailwind.config.js         # Tailwind design system configurations
+    └── postcss.config.js          # PostCSS configuration
+```
+
+---
+
+## ⚙️ Configuration & Setup
+
+### 1. Server Configuration
+Create a `.env` file inside the `server/` directory:
+```env
+PORT=5000
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/ai-smart-commerce?retryWrites=true&w=majority
+JWT_SECRET=your_jwt_signing_key_secret
+JWT_EXPIRE=7d
+CLOUDINARY_CLOUD_NAME=your_cloudinary_name
+CLOUDINARY_API_KEY=your_cloudinary_api_key
+CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+FRONTEND_URL=http://localhost:5173
+NODE_ENV=development
+```
+
+### 2. Client Configuration
+Create a `.env` file inside the `client/` directory:
+```env
+VITE_RAZORPAY_KEY_ID=your_razorpay_key_id
+VITE_API_URL=http://localhost:5000/api
+```
+
+---
+
+## 🏃 Running the Application
+
+### 1. Install Dependencies
+```bash
+# Install backend packages
+cd server
+npm install
+
+# Install frontend packages
+cd ../client
+npm install --legacy-peer-deps
+```
+
+### 2. Seed Mock Database Data
+Pre-populate users, products, categories, and reviews:
+```bash
+cd server
+node seed.js
+```
+*Creates default accounts:*
+- **Customer login**: `customer@example.com` / `password123`
+- **Admin login**: `admin@example.com` / `password123`
+
+### 3. Start Development Servers
+```bash
+# In server/ directory
+npm run dev
+
+# In client/ directory
+npm run dev
+```
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+---
+
+## 🔮 Roadmap: Future AI Capabilities
+
+This codebase has been built with clean modular separation of concerns, providing direct integration paths for the upcoming AI Smart features:
+1. **AI Semantic Search**: Set up Mongoose middleware to automatically generate Vector Embeddings on Product creations for semantic relevance search.
+2. **AI Recommendation Engine**: Feed the structured `Reviews`, `Cart`, and `Wishlist` collections data into collaborative filtering models to display personalized recommendations.
+3. **AI Chatbot Shopping Assistant**: An interface hooks setup inside `Navbar.jsx` to mount a conversational chat overlay that acts as a customer helper.
