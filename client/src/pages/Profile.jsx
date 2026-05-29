@@ -31,6 +31,20 @@ export const Profile = () => {
     confirmNewPassword: '',
   });
 
+  const handleProfileChange = (e) => {
+    setProfileForm({
+      ...profileForm,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handlePasswordChange = (e) => {
+    setPasswordForm({
+      ...passwordForm,
+      [e.target.name]: e.target.value,
+    });
+  };
+
   // 2. Saved Address Form State
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressForm, setAddressForm] = useState({
@@ -48,10 +62,14 @@ export const Profile = () => {
   const [editingComment, setEditingComment] = useState('');
   const [editingRating, setEditingRating] = useState(5);
 
-  // Sync saved address list on user context updates
+  // Sync saved details on user context updates
   useEffect(() => {
-    if (user?.addresses) {
-      setAddresses(user.addresses);
+    if (user) {
+      setAddresses(user.addresses || []);
+      setProfileForm({
+        name: user.name || '',
+        email: user.email || '',
+      });
     }
   }, [user]);
 
