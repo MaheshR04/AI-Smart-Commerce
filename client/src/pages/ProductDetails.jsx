@@ -1,0 +1,334 @@
+import { useContext, useState, useEffect } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ShopContext } from '../context/ShopContext';
+import { CartContext } from '../context/CartContext';
+import { AuthContext } from '../context/AuthContext';
+import ReviewSection from '../components/ReviewSection';
+import { Heart, ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronLeft } from 'lucide-react';
+import API from '../services/api';
+
+export const ProductDetails = () => {
+  const { id } = useParams();
+  const { toggleWishlist, isInWishlist } = useContext(ShopContext);
+  const { addToCart } = useContext(CartContext);
+  const { token } = useContext(AuthContext);
+
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeImage, setActiveImage] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+  
+  const navigate = useNavigate();
+
+  // Load single product details
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setLoading(true);
+      try {
+        const response = await API.get(`/products/${id}`);
+        const prod = response.data.data;
+        setProduct(prod);
+        setActiveImage(prod.images[0] || '');
+        setLoading(false);
+      } catch (error) {
+        setLoading(false);
+        console.error('Failed to load product:', error.message);
+      }
+    };
+
+    if (id) {
+      fetchProduct();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+        <p className="text-slate-500 mt-4 font-semibold text-xs">Loading product details...</p>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-16 text-center space-y-4 flex-1">
+        <h3 className="text-lg font-bold text-slate-700">Product Not Found</h3>
+        <p className="text-xs text-slate-400">The product you are trying to view does not exist or has been removed.</p>
+        <Link to="/" className="inline-flex items-center gap-1 text-xs font-bold text-sky-600">
+          <ChevronLeft className="w-4 h-4" /> Back to Catalog
+        </Link>
+      </div>
+    );
+  }
+
+  const { name, brand, category, description, price, discountPrice, stock, images, rating, specifications } = product;
+
+  const isProductInWishlist = isInWishlist(id);
+  const activePrice = discountPrice > 0 ? discountPrice : price;
+  const saving = discountPrice > 0 ? price - discountPrice : 0;
+  const savingPercent = discountPrice > 0 ? Math.round((saving / price) * 100) : 0;
+
+  const handleWishlistClick = async () => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    setWishlistLoading(true);
+    try {
+      await toggleWishlist(id);
+    } catch (error) {
+      console.error(error.message);
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    if (stock < 1) return;
+
+    setAddingToCart(true);
+    try {
+      await addToCart(id, quantity);
+    } catch (error) {
+      console.error(error.message);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  // Render static/active stars based on rating
+  const renderStars = (ratingVal) => {
+    const stars = [];
+    const floorRating = Math.floor(ratingVal || 0);
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <Star
+          key={i}
+          className={`w-4 h-4 ${
+            i <= floorRating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+          }`}
+        />
+      );
+    }
+    return stars;
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 space-y-10">
+      
+      {/* Back button */}
+      <div>
+        <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-sky-600 transition-colors">
+          <ChevronLeft className="w-4 h-4" /> Back to Products
+        </Link>
+      </div>
+
+      {/* Main product visual grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+        
+        {/* Left Side: Images Viewer */}
+        <div className="space-y-4">
+          
+          {/* Main active image preview box */}
+          <div className="aspect-square bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm relative">
+            <img src={activeImage} alt={name} className="w-full h-full object-cover" />
+            
+            {discountPrice > 0 && (
+              <span className="absolute top-4 left-4 z-10 px-2.5 py-1 text-xs font-bold text-white bg-rose-500 rounded-lg shadow-sm">
+                {savingPercent}% OFF
+              </span>
+            )}
+          </div>
+
+          {/* Thumbnail strip selection */}
+          {images.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(img)}
+                  className={`aspect-square w-20 rounded-xl border overflow-hidden flex-shrink-0 bg-white transition-all ${
+                    activeImage === img ? 'border-sky-500 ring-2 ring-sky-100' : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <img src={img} alt={`thumbnail-${idx}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right Side: Product Details Column */}
+        <div className="space-y-6">
+          
+          {/* Catalog headers */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-sky-600 bg-sky-50 border border-sky-100 rounded-lg px-2.5 py-1 uppercase tracking-wider">
+                {brand}
+              </span>
+              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 rounded-lg px-2.5 py-1 uppercase tracking-wider">
+                {category}
+              </span>
+            </div>
+            
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 leading-snug">
+              {name}
+            </h1>
+
+            {/* Rating summary */}
+            <div className="flex items-center gap-2">
+              <div className="flex">{renderStars(rating)}</div>
+              <span className="text-xs font-semibold text-slate-500">{rating > 0 ? `${rating.toFixed(1)} Out of 5 Stars` : 'No reviews yet'}</span>
+            </div>
+          </div>
+
+          {/* Pricing Box */}
+          <div className="bg-slate-50 border border-slate-200/50 rounded-2xl p-5 space-y-1">
+            <p className="text-xs font-semibold text-slate-400">Total Price</p>
+            <div className="flex items-baseline gap-3">
+              {discountPrice > 0 ? (
+                <>
+                  <span className="text-3xl font-extrabold text-slate-900">₹{discountPrice.toLocaleString('en-IN')}</span>
+                  <span className="text-sm text-slate-400 line-through">₹{price.toLocaleString('en-IN')}</span>
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2 py-0.5 ml-2">
+                    Save ₹{saving.toLocaleString('en-IN')} ({savingPercent}%)
+                  </span>
+                </>
+              ) : (
+                <span className="text-3xl font-extrabold text-slate-900">₹{price.toLocaleString('en-IN')}</span>
+              )}
+            </div>
+
+            {/* Stock status indicator */}
+            <div className="pt-3">
+              {stock > 0 ? (
+                <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1">
+                  In Stock (Available: {stock} units)
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold text-red-500 bg-red-50 border border-red-100 rounded-lg px-2.5 py-1">
+                  Temporarily Out of Stock
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Product Description */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-slate-700">Product Description</h3>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              {description}
+            </p>
+          </div>
+
+          {/* Purchase Actions (Quantity selector & Cart/Wishlist trigger) */}
+          {stock > 0 && (
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-semibold text-slate-500">Select Quantity:</span>
+                
+                {/* Quantity Editor buttons */}
+                <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                  <button
+                    disabled={quantity <= 1}
+                    onClick={() => setQuantity((prev) => prev - 1)}
+                    className="px-3 py-1.5 text-slate-500 hover:bg-slate-50 disabled:opacity-30 font-bold transition-colors"
+                  >
+                    -
+                  </button>
+                  <span className="px-4 py-1.5 text-xs font-bold text-slate-700 bg-slate-50 border-x border-slate-100">
+                    {quantity}
+                  </span>
+                  <button
+                    disabled={quantity >= stock}
+                    onClick={() => setQuantity((prev) => prev + 1)}
+                    className="px-3 py-1.5 text-slate-500 hover:bg-slate-50 disabled:opacity-30 font-bold transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={addingToCart}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white rounded-xl font-bold shadow-md shadow-sky-100 active:scale-95 disabled:opacity-50 transition-all duration-200"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  {addingToCart ? 'Adding to Cart...' : 'Add to Cart'}
+                </button>
+
+                <button
+                  disabled={wishlistLoading}
+                  onClick={handleWishlistClick}
+                  className={`px-6 py-3 border rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-200 active:scale-95 ${
+                    isProductInWishlist
+                      ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${isProductInWishlist ? 'fill-current' : ''}`} />
+                  {isProductInWishlist ? 'Wishlisted' : 'Save to Wishlist'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Secure details tags */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-slate-100 text-slate-500 text-[11px] font-medium">
+            <div className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+              <span>100% Authentic Products</span>
+            </div>
+            <div className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              <Truck className="w-4 h-4 text-sky-500 flex-shrink-0" />
+              <span>Free Delivery Available</span>
+            </div>
+            <div className="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+              <RefreshCw className="w-4 h-4 text-amber-500 flex-shrink-0" />
+              <span>7-Day Return Policy</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Specifications list section */}
+      {specifications && specifications.length > 0 && (
+        <section className="space-y-4 pt-6 border-t border-slate-100">
+          <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Product Specifications</h3>
+          <div className="bg-white border border-slate-200/50 rounded-2xl overflow-hidden shadow-sm">
+            <div className="divide-y divide-slate-100">
+              {specifications.map((spec, idx) => (
+                <div key={idx} className="grid grid-cols-3 p-3.5 text-xs">
+                  <div className="font-semibold text-slate-400 uppercase tracking-wider">{spec.key}</div>
+                  <div className="col-span-2 font-bold text-slate-700">{spec.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Reviews section wrapper */}
+      <ReviewSection productId={id} />
+
+    </div>
+  );
+};
+
+export default ProductDetails;

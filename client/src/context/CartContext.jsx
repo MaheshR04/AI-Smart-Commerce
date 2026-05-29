@@ -1,0 +1,116 @@
+import { createContext, useState, useEffect, useContext } from 'react';
+import { AuthContext } from './AuthContext';
+import API from '../services/api';
+
+export const CartContext = createContext();
+
+export const CartProvider = ({ children }) => {
+  const { token } = useContext(AuthContext);
+  const [cart, setCart] = useState({ products: [] });
+  const [loading, setLoading] = useState(false);
+
+  // Fetch cart items from server
+  const fetchCart = async () => {
+    if (!token) {
+      setCart({ products: [] });
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await API.get('/cart');
+      setCart(response.data.data || { products: [] });
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error('Failed to fetch cart:', error.message);
+    }
+  };
+
+  // Sync cart when authentication changes
+  useEffect(() => {
+    fetchCart();
+  }, [token]);
+
+  // Add product to cart
+  const addToCart = async (productId, quantity = 1) => {
+    if (!token) {
+      throw new Error('Please log in to add items to cart.');
+    }
+    try {
+      const response = await API.post('/cart', { productId, quantity });
+      setCart(response.data.data);
+      return response.data;
+    } catch (error) {
+      const errMsg = error.response?.data?.message || 'Failed to add item to cart';
+      throw new Error(errMsg);
+    }
+  };
+
+  // Update item quantity
+  const updateCartItemQuantity = async (productId, quantity) => {
+    try {
+      const response = await API.put('/cart', { productId, quantity });
+      setCart(response.data.data);
+      return response.data;
+    } catch (error) {
+      const errMsg = error.response?.data?.message || 'Failed to update cart quantity';
+      throw new Error(errMsg);
+    }
+  };
+
+  // Remove item from cart
+  const removeFromCart = async (productId) => {
+    try {
+      const response = await API.delete(`/cart/${productId}`);
+      setCart(response.data.data);
+      return response.data;
+    } catch (error) {
+      const errMsg = error.response?.data?.message || 'Failed to remove item from cart';
+      throw new Error(errMsg);
+    }
+  };
+
+  // Clear entire cart
+  const clearCart = async () => {
+    try {
+      const response = await API.post('/cart/clear');
+      setCart(response.data.data || { products: [] });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to clear cart:', error.message);
+    }
+  };
+
+  // Calculated utilities
+  const getCartCount = () => {
+    if (!cart || !cart.products) return 0;
+    return cart.products.reduce((acc, item) => acc + item.quantity, 0);
+  };
+
+  const getCartTotal = () => {
+    if (!cart || !cart.products) return 0;
+    return cart.products.reduce((acc, item) => {
+      if (!item.productId) return acc;
+      const price = item.productId.discountPrice > 0 ? item.productId.discountPrice : item.productId.price;
+      return acc + price * item.quantity;
+    }, 0);
+  };
+
+  return (
+    <CartContext.Provider
+      value={{
+        cart,
+        loading,
+        fetchCart,
+        addToCart,
+        updateCartItemQuantity,
+        removeFromCart,
+        clearCart,
+        getCartCount,
+        getCartTotal,
+      }}
+    >
+      {children}
+    </CartContext.Provider>
+  );
+};
