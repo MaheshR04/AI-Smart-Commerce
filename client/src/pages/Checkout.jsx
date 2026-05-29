@@ -120,7 +120,7 @@ export const Checkout = () => {
         // Complete transaction immediately
         await clearCart();
         setSubmitting(false);
-        navigate('/orders', { state: { orderSuccess: true } });
+        navigate('/checkout/success', { state: { order } });
       } else {
         // Razorpay Flow
         const sdkLoaded = await loadRazorpaySDK();
@@ -141,7 +141,7 @@ export const Checkout = () => {
 
           if (confirmPayment) {
             // Verify simulated checkout on backend
-            await API.post('/orders/verify', {
+            const verifyResponse = await API.post('/orders/verify', {
               orderId: order._id,
               razorpayOrderId: razorpayOrderId,
               razorpayPaymentId: `pay_mock_${Date.now()}`,
@@ -150,7 +150,7 @@ export const Checkout = () => {
 
             await clearCart();
             setSubmitting(false);
-            navigate('/orders', { state: { orderSuccess: true } });
+            navigate('/checkout/success', { state: { order: verifyResponse.data.data } });
           } else {
             // Simulated payment cancelled
             setSubmitting(false);
@@ -169,7 +169,7 @@ export const Checkout = () => {
           handler: async function (paymentResponse) {
             try {
               // 3. Verify Razorpay signatures on server
-              await API.post('/orders/verify', {
+              const verifyResponse = await API.post('/orders/verify', {
                 orderId: order._id,
                 razorpayOrderId: paymentResponse.razorpay_order_id,
                 razorpayPaymentId: paymentResponse.razorpay_payment_id,
@@ -178,7 +178,7 @@ export const Checkout = () => {
 
               await clearCart();
               setSubmitting(false);
-              navigate('/orders', { state: { orderSuccess: true } });
+              navigate('/checkout/success', { state: { order: verifyResponse.data.data } });
             } catch (err) {
               setError(err.response?.data?.message || 'Payment signature verification failed.');
               setSubmitting(false);
@@ -290,7 +290,39 @@ export const Checkout = () => {
             isSubmitting={submitting}
             initialAddress={selectedAddress}
           />
-          {error && <p className="text-xs font-bold text-red-500 mt-4">{error}</p>}
+          {error && (
+            <div className="bg-rose-50 border border-rose-100 rounded-2xl p-5 space-y-4 mt-4 animate-fade-in">
+              <div className="flex gap-3">
+                <ShieldAlert className="w-5 h-5 text-rose-500 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-xs font-bold text-rose-800 uppercase tracking-wider">Payment Transaction Declined</h4>
+                  <p className="text-xs text-rose-600 font-semibold leading-relaxed">
+                    {error}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-rose-100/40">
+                <button
+                  onClick={() => {
+                    const codRadio = document.querySelector('input[value="COD"]');
+                    if (codRadio) {
+                      codRadio.click();
+                    }
+                    setError('');
+                  }}
+                  className="flex-1 px-3.5 py-2.5 bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-xl text-[10px] font-bold tracking-wide uppercase transition-all duration-200 active:scale-95 cursor-pointer"
+                >
+                  Pay with Cash On Delivery (COD) Instead
+                </button>
+                <button
+                  onClick={() => setError('')}
+                  className="px-4 py-2.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-[10px] font-bold tracking-wide uppercase transition-all duration-200 active:scale-95 cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Order items details summary */}

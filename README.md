@@ -24,6 +24,8 @@ The codebase is structured to serve as a robust, scalable foundation, preparing 
 - **Saved Address Book**: Support for multiple shipping address entries per user with instant default toggles and single-click checkout pre-population.
 - **"Save for Later" Cart Integrations**: Complete Amazon-style cart integrations allowing users to save items for later (moving to wishlist and removing from active cart) and move them back to the active cart with a single click.
 - **Comprehensive Checkout Portal**: A high-performance screen combining visual item summaries, promo code selectors, payment method grids (secure COD or Razorpay overlays), a "+ Enter New Address" card to wipe and clear input forms instantly, and optional auto-saving profile checkboxes to save newly typed shipping addresses on successful order submission.
+- **Premium Celebratory Success Receipts**: A dedicated `/checkout/success` page displaying successful order IDs, exact total amount paid breakdowns, estimated delivery calendar timelines (3-5 business days), and address snapshots.
+- **Fail-Safe Payment Recovery Warning Cards**: Custom dismissible rose warning cards displaying error details and offering single-click Cash on Delivery (COD) switches when payments decline.
 
 ### 🛍 Discover & Curated Homepage Experience
 - **Interactive Promo Carousel**: Rotating promotional banners linking directly to product category directory views.

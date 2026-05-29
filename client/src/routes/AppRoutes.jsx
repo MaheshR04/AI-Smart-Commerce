@@ -6,6 +6,7 @@ import ProductDetails from '../pages/ProductDetails';
 import Cart from '../pages/Cart';
 import Wishlist from '../pages/Wishlist';
 import Checkout from '../pages/Checkout';
+import PaymentSuccess from '../pages/PaymentSuccess';
 import OrderHistory from '../pages/OrderHistory';
 import AdminDashboard from '../pages/AdminDashboard';
 import Profile from '../pages/Profile';
@@ -50,6 +51,14 @@ export const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <Checkout />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/checkout/success"
+        element={
+          <ProtectedRoute>
+            <PaymentSuccess />
           </ProtectedRoute>
         }
       />
