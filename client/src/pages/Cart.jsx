@@ -1,7 +1,8 @@
 import { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
-import { Trash2, ShoppingBag, ChevronRight, ArrowLeft } from 'lucide-react';
+import { ShopContext } from '../context/ShopContext';
+import { Trash2, ShoppingBag, ChevronRight, ArrowLeft, Heart } from 'lucide-react';
 
 export const Cart = () => {
   const {
@@ -10,7 +11,10 @@ export const Cart = () => {
     updateCartItemQuantity,
     removeFromCart,
     getCartTotal,
+    addToCart,
   } = useContext(CartContext);
+
+  const { wishlist, toggleWishlist } = useContext(ShopContext);
 
   const navigate = useNavigate();
 
@@ -30,6 +34,37 @@ export const Cart = () => {
   const handleRemove = async (productId) => {
     try {
       await removeFromCart(productId);
+    } catch (error) {
+      console.error(error.message);
+    }
+  };
+
+  const handleSaveForLater = async (productId) => {
+    try {
+      const inWishlist = wishlist?.products?.some(
+        (item) => (item._id || item).toString() === productId.toString()
+      );
+      if (!inWishlist) {
+        await toggleWishlist(productId);
+      }
+      await removeFromCart(productId);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const handleMoveToCart = async (productId) => {
+    try {
+      await addToCart(productId, 1);
+      await toggleWishlist(productId);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const handleRemoveFromWishlist = async (productId) => {
+    try {
+      await toggleWishlist(productId);
     } catch (error) {
       console.error(error.message);
     }
@@ -122,6 +157,16 @@ export const Cart = () => {
                         </span>
                       </div>
 
+                      {/* Save for later button */}
+                      <button
+                        onClick={() => handleSaveForLater(_id)}
+                        className="text-slate-400 hover:text-sky-500 p-2 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider"
+                        title="Save for Later"
+                      >
+                        <Heart className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Save for Later</span>
+                      </button>
+
                       {/* Remove item button */}
                       <button
                         onClick={() => handleRemove(_id)}
@@ -137,6 +182,67 @@ export const Cart = () => {
                 );
               })}
             </div>
+
+            {/* Saved for Later Section */}
+            {wishlist?.products?.length > 0 && (
+              <div className="bg-white border border-slate-200/60 rounded-2xl p-4 sm:p-6 shadow-sm space-y-4">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                  Saved for Later ({wishlist.products.length} {wishlist.products.length === 1 ? 'item' : 'items'})
+                </h3>
+                <div className="divide-y divide-slate-100">
+                  {wishlist.products.map((item) => {
+                    if (!item) return null;
+                    const { _id, name, brand, images, price, discountPrice, stock } = item;
+                    const activePrice = discountPrice > 0 ? discountPrice : price;
+                    return (
+                      <div key={_id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
+                        
+                        {/* Saved item image & title info */}
+                        <div className="flex items-center gap-4 flex-1">
+                          <Link to={`/products/${_id}`} className="aspect-square w-14 sm:w-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex-shrink-0">
+                            <img src={images[0]} alt={name} className="w-full h-full object-cover" />
+                          </Link>
+                          <div className="space-y-0.5">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{brand}</span>
+                            <Link to={`/products/${_id}`} className="block">
+                              <h4 className="text-xs font-semibold text-slate-800 hover:text-sky-600 transition-colors line-clamp-1 leading-tight">
+                                {name}
+                              </h4>
+                            </Link>
+                            <div className="flex items-baseline gap-1.5 pt-0.5">
+                              <span className="text-xs font-bold text-slate-800">₹{activePrice.toLocaleString('en-IN')}</span>
+                              {discountPrice > 0 && (
+                                <span className="text-[9px] text-slate-400 line-through">₹{price.toLocaleString('en-IN')}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Move to Cart / Delete actions */}
+                        <div className="flex items-center gap-3 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 justify-end">
+                          <button
+                            onClick={() => handleMoveToCart(_id)}
+                            disabled={stock === 0}
+                            className="px-3 py-1.5 bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white rounded-xl text-[10px] font-bold border border-sky-100 transition-all duration-200 active:scale-95 disabled:opacity-50 cursor-pointer"
+                          >
+                            {stock === 0 ? 'Out of Stock' : 'Move to Cart'}
+                          </button>
+                          <button
+                            onClick={() => handleRemoveFromWishlist(_id)}
+                            className="text-slate-400 hover:text-red-500 p-2 rounded-lg hover:bg-slate-50 transition-colors"
+                            title="Remove Saved Item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Back button shortcut */}
             <div>

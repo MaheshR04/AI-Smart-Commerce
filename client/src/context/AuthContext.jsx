@@ -95,6 +95,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUserAddresses = (addresses) => {
+    setUser((prev) => {
+      const nextUser = { ...prev, addresses };
+      localStorage.setItem('user', JSON.stringify(nextUser));
+      return nextUser;
+    });
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -106,6 +114,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateProfile,
+        updateUserAddresses,
         isAdmin: user?.role === 'admin',
       }}
     >

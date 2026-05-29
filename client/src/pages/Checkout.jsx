@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import CheckoutForm from '../components/CheckoutForm';
-import { ShieldAlert, CreditCard, ArrowLeft, MapPin, Tag } from 'lucide-react';
+import { ShieldAlert, CreditCard, ArrowLeft, MapPin, Tag, Plus } from 'lucide-react';
 import API from '../services/api';
 
 export const Checkout = () => {
   const { cart, getCartTotal, clearCart } = useContext(CartContext);
-  const { user } = useContext(AuthContext);
+  const { user, updateUserAddresses } = useContext(AuthContext);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -84,11 +84,21 @@ export const Checkout = () => {
     setCouponError('');
   };
 
-  const handleCheckoutSubmit = async ({ shippingAddress, paymentMethod }) => {
+  const handleCheckoutSubmit = async ({ shippingAddress, paymentMethod, saveAddress }) => {
     setSubmitting(true);
     setError('');
 
     try {
+      // 0. Auto-save shipping address if checked
+      if (saveAddress) {
+        try {
+          const res = await API.post('/users/address', shippingAddress);
+          updateUserAddresses(res.data.data);
+        } catch (addrErr) {
+          console.error('Failed to auto-save address to user profile book:', addrErr.message);
+        }
+      }
+
       // Map products to order requirements
       const orderProducts = cart.products.map((item) => ({
         productId: item.productId._id,
@@ -258,6 +268,19 @@ export const Checkout = () => {
                     </div>
                   </div>
                 ))}
+
+                {/* Enter New Address Card option */}
+                <div
+                  onClick={() => setSelectedAddress(null)}
+                  className={`border border-dashed rounded-xl p-4 cursor-pointer transition-all duration-200 text-xs font-bold hover:bg-slate-50 flex flex-col justify-center items-center gap-1.5 min-h-[90px] ${
+                    selectedAddress === null
+                      ? 'border-sky-500 bg-sky-50/50 ring-2 ring-sky-100 text-sky-600'
+                      : 'border-slate-300 text-slate-400 hover:text-slate-505'
+                  }`}
+                >
+                  <Plus className="w-5 h-5 text-sky-500" />
+                  Enter New Address
+                </div>
               </div>
             </div>
           )}

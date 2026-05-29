@@ -16,12 +16,14 @@ The codebase is structured to serve as a robust, scalable foundation, preparing 
 ### 📦 Robust Database Collections (Mongoose)
 - **Advanced Product Catalog**: Supports text indexing, pricing validations, stock levels, and embedded specifications array.
 - **Dynamic Rating Aggregations**: Review submissions automatically compute and cache product average ratings.
-- **Shopping Cart & Wishlist**: Real-time local state synchronization persisting to the database.
+- **Shopping Cart & Wishlist**: Real-time local state synchronization persisting to the database, supporting granular quantity edits and wishlist saves.
 - **Transactions Snapshots**: Capture static item prices at checkout to insulate against future pricing changes.
 
-### 💳 Promo Coupons & Address Manager
+### 💳 Promo Coupons, Address book & Save for Later
 - **Dynamic Promo Coupon Engine**: Fully functional coupon code validations (`WELCOME10`, `FLAT500`) checking active status, minimum thresholds, and calendars, with automatic calculation at checkout.
 - **Saved Address Book**: Support for multiple shipping address entries per user with instant default toggles and single-click checkout pre-population.
+- **"Save for Later" Cart Integrations**: Complete Amazon-style cart integrations allowing users to save items for later (moving to wishlist and removing from active cart) and move them back to the active cart with a single click.
+- **Comprehensive Checkout Portal**: A high-performance screen combining visual item summaries, promo code selectors, payment method grids (secure COD or Razorpay overlays), a "+ Enter New Address" card to wipe and clear input forms instantly, and optional auto-saving profile checkboxes to save newly typed shipping addresses on successful order submission.
 
 ### 🛍 Discover & Curated Homepage Experience
 - **Interactive Promo Carousel**: Rotating promotional banners linking directly to product category directory views.

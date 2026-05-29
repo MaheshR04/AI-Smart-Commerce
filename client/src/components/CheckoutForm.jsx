@@ -11,6 +11,8 @@ export const CheckoutForm = ({ onSubmit, isSubmitting, initialAddress }) => {
     phone: '',
   });
 
+  const [saveAddress, setSaveAddress] = useState(false);
+
   useEffect(() => {
     if (initialAddress) {
       setFormData({
@@ -20,6 +22,15 @@ export const CheckoutForm = ({ onSubmit, isSubmitting, initialAddress }) => {
         postalCode: initialAddress.postalCode || '',
         country: initialAddress.country || 'India',
         phone: initialAddress.phone || '',
+      });
+    } else {
+      setFormData({
+        street: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        country: 'India',
+        phone: '',
       });
     }
   }, [initialAddress]);
@@ -53,6 +64,7 @@ export const CheckoutForm = ({ onSubmit, isSubmitting, initialAddress }) => {
     onSubmit({
       shippingAddress: formData,
       paymentMethod,
+      saveAddress: !initialAddress && saveAddress,
     });
   };
 
@@ -139,6 +151,21 @@ export const CheckoutForm = ({ onSubmit, isSubmitting, initialAddress }) => {
               onChange={handleChange}
             />
           </div>
+
+          {!initialAddress && (
+            <div className="md:col-span-2 flex items-center gap-2 pt-2 border-t border-slate-100/60 mt-2">
+              <input
+                type="checkbox"
+                id="saveAddress"
+                checked={saveAddress}
+                onChange={(e) => setSaveAddress(e.target.checked)}
+                className="rounded border-slate-300 text-sky-500 focus:ring-sky-400 h-4 w-4 cursor-pointer"
+              />
+              <label htmlFor="saveAddress" className="text-xs font-semibold text-slate-600 cursor-pointer select-none">
+                Save this address to my profile address book
+              </label>
+            </div>
+          )}
         </div>
       </div>
 
