@@ -11,10 +11,10 @@ import './App.css';
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ShopProvider>
-          <CartProvider>
-            <ToastProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <ShopProvider>
+            <CartProvider>
               <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300">
                 <Navbar />
                 <main className="flex-grow flex flex-col">
@@ -22,10 +22,10 @@ function App() {
                 </main>
                 <Footer />
               </div>
-            </ToastProvider>
-          </CartProvider>
-        </ShopProvider>
-      </AuthProvider>
+            </CartProvider>
+          </ShopProvider>
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }
