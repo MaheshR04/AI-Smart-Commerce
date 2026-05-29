@@ -57,6 +57,13 @@ The codebase is structured to serve as a robust, scalable foundation, preparing 
 - **Auto-Loading Forms Pre-Population**: The application automatically checks for existing user feedback on visited product pages, pre-populating comment texts and star selections while shifting submit actions to "Update Review" mode.
 - **Inline Customer Edits & Authorized Moderations**: Review authors can trigger pencil edit shortcuts (scrolling and focusing textareas smoothly) or permanently delete comments. Platform administrators can execute moderator removals next to any review, automatically updating product average ratings instantly.
 
+### 📧 Automated Email Notifications
+- **Unified Email Dispatch Service**: Integrates secure `nodemailer` transport layers. Automatically falls back to creating mock SMTP sessions and saving styled email HTML files directly to the local workspace folder `server/sent_emails/` for offline review.
+- **Welcome Emails**: Welcomes new customers on registration, offering a `WELCOME10` discount coupon code inside a beautifully styled linear-blue layout.
+- **Order Confirmations**: Transmits automated shopping invoices containing static products snapshots, shipping coordinates, payment terms, and calculated aggregates (discounts, inclusive GST, shipping fees).
+- **Payment & Shipment Updates**: Dispatches instant confirmations upon payment capture or carrier dispatches, incorporating visual progress tracking indicators and tracking Airway Bills.
+- **Delivery Confirmations**: Notifies buyers immediately upon package arrival and prompts rating feedback links to complete the purchase loop.
+
 ---
 
 ## 🛠 Tech Stack

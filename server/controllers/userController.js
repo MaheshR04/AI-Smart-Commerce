@@ -1,5 +1,7 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import { sendWelcomeEmail } from '../services/emailService.js';
+
 
 // Helper to generate JWT Token
 const generateToken = (id) => {
@@ -32,6 +34,11 @@ export const registerUser = async (req, res, next) => {
     });
 
     if (user) {
+      // Dispatch Welcome Email asynchronously to prevent network blocks
+      sendWelcomeEmail(user.email, user.name).catch((err) =>
+        console.error('Welcome email dispatch failed:', err.message)
+      );
+
       res.status(201).json({
         success: true,
         data: {

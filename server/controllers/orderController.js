@@ -4,6 +4,12 @@ import Cart from '../models/Cart.js';
 import Coupon from '../models/Coupon.js';
 import { getRazorpayInstance } from '../config/razorpay.js';
 import crypto from 'crypto';
+import {
+  sendOrderConfirmationEmail,
+  sendPaymentConfirmationEmail,
+  sendShippingUpdateEmail,
+  sendDeliveryUpdateEmail
+} from '../services/emailService.js';
 
 /**
  * @desc    Create a new order (COD or initialize Razorpay session)
@@ -140,6 +146,11 @@ export const createOrder = async (req, res, next) => {
     // Clear user cart upon successful checkout creation
     await Cart.findOneAndUpdate({ userId: req.user._id }, { products: [] });
 
+    // Send order confirmation email asynchronously
+    sendOrderConfirmationEmail(req.user.email, req.user.name, order).catch((err) =>
+      console.error('Order confirmation email dispatch failed:', err.message)
+    );
+
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
@@ -174,6 +185,11 @@ export const verifyRazorpayPayment = async (req, res, next) => {
 
       await order.save();
 
+      // Dispatch Payment Confirmation email asynchronously
+      sendPaymentConfirmationEmail(req.user.email, req.user.name, order).catch((err) =>
+        console.error('Payment confirmation email dispatch failed:', err.message)
+      );
+
       return res.json({
         success: true,
         message: 'Mock payment verified successfully (Sandbox Mode)',
@@ -202,6 +218,11 @@ export const verifyRazorpayPayment = async (req, res, next) => {
       order.orderStatus = 'Processing';
 
       await order.save();
+
+      // Dispatch Payment Confirmation email asynchronously
+      sendPaymentConfirmationEmail(req.user.email, req.user.name, order).catch((err) =>
+        console.error('Payment confirmation email dispatch failed:', err.message)
+      );
 
       res.json({
         success: true,
@@ -261,7 +282,7 @@ export const updateOrderStatus = async (req, res, next) => {
   const { orderStatus } = req.body;
 
   try {
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id).populate('userId', 'name email');
 
     if (order) {
       order.orderStatus = orderStatus;
@@ -281,6 +302,20 @@ export const updateOrderStatus = async (req, res, next) => {
       }
 
       const updatedOrder = await order.save();
+
+      // Trigger shipping or delivery emails asynchronously if user exists
+      if (order.userId) {
+        if (orderStatus === 'Shipped') {
+          sendShippingUpdateEmail(order.userId.email, order.userId.name, updatedOrder).catch((err) =>
+            console.error('Shipping email dispatch failed:', err.message)
+          );
+        } else if (orderStatus === 'Delivered') {
+          sendDeliveryUpdateEmail(order.userId.email, order.userId.name, updatedOrder).catch((err) =>
+            console.error('Delivery email dispatch failed:', err.message)
+          );
+        }
+      }
+
       res.json({
         success: true,
         message: `Order status updated to ${orderStatus}`,
