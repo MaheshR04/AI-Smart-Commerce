@@ -64,6 +64,14 @@ The codebase is structured to serve as a robust, scalable foundation, preparing 
 - **Payment & Shipment Updates**: Dispatches instant confirmations upon payment capture or carrier dispatches, incorporating visual progress tracking indicators and tracking Airway Bills.
 - **Delivery Confirmations**: Notifies buyers immediately upon package arrival and prompts rating feedback links to complete the purchase loop.
 
+### 📈 Comprehensive Admin Analytics & Sales Reports
+- **Real-Time Aggregation Counters**: Provides active counts for Total Revenue (sums delivered COD and online Razorpay orders), Order Volumes, Registered Customers, and Active Product Inventory.
+- **Category & Monthly Pipelines**: Visualizes category revenue shares with horizontal loading bars and represents monthly sales volumes with animated group-bar charts and mouse-over tooltips.
+- **Critical Low-Stock Alerts**: Alerts administrators when inventory units for any catalog product fall below 5 with custom warning banners.
+- **Top Selling Products**: Extracts and ranks the top 5 highest volume selling products complete with ranked thumbnail snapshots and units sold metrics.
+- **Sales Reports Workspace**: Calculates Average Order Value (AOV) and coupon saving disbursements. Compares COD vs Razorpay online gateway shares with comparison visualizers.
+- **One-Click Printable Reports**: Includes an interactive "Print Report" dashboard trigger that formats a clean, print-friendly annual sales performance sheet.
+
 ---
 
 ## 🛠 Tech Stack

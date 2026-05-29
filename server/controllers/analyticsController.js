@@ -98,6 +98,68 @@ export const getDashboardStats = async (req, res, next) => {
     const customersCount = await User.countDocuments({ role: 'customer' });
     const adminsCount = await User.countDocuments({ role: 'admin' });
 
+    // 7. Top 5 Selling Products aggregation
+    const topProducts = await Order.aggregate([
+      {
+        $match: {
+          $or: [
+            { 'paymentDetails.paymentStatus': 'Completed' },
+            { orderStatus: { $ne: 'Cancelled' } },
+          ],
+        },
+      },
+      { $unwind: '$products' },
+      {
+        $group: {
+          _id: '$products.productId',
+          name: { $first: '$products.name' },
+          image: { $first: '$products.image' },
+          unitsSold: { $sum: '$products.quantity' },
+          revenue: { $sum: { $multiply: ['$products.price', '$products.quantity'] } },
+        },
+      },
+      { $sort: { unitsSold: -1 } },
+      { $limit: 5 },
+    ]);
+
+    // 8. Payment Method Breakdown for Sales Reports
+    const paymentBreakdown = await Order.aggregate([
+      {
+        $match: {
+          $or: [
+            { 'paymentDetails.paymentStatus': 'Completed' },
+            { orderStatus: { $ne: 'Cancelled' } },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: '$paymentMethod',
+          revenue: { $sum: '$totalAmount' },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const codStats = paymentBreakdown.find(p => p._id === 'COD') || { revenue: 0, count: 0 };
+    const onlineStats = paymentBreakdown.find(p => p._id === 'Razorpay') || { revenue: 0, count: 0 };
+
+    // 9. Total Coupon Discounts Applied
+    const discountAgg = await Order.aggregate([
+      {
+        $match: {
+          orderStatus: { $ne: 'Cancelled' }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalDiscount: { $sum: '$discountAmount' }
+        }
+      }
+    ]);
+    const totalDiscounts = discountAgg[0]?.totalDiscount || 0;
+
     res.json({
       success: true,
       data: {
@@ -118,6 +180,24 @@ export const getDashboardStats = async (req, res, next) => {
           admins: adminsCount,
         },
         lowStockAlerts,
+        topProducts: topProducts.map((item) => ({
+          productId: item._id,
+          name: item.name,
+          image: item.image,
+          unitsSold: item.unitsSold,
+          revenue: Math.round(item.revenue),
+        })),
+        reports: {
+          cod: {
+            revenue: Math.round(codStats.revenue),
+            count: codStats.count,
+          },
+          online: {
+            revenue: Math.round(onlineStats.revenue),
+            count: onlineStats.count,
+          },
+          totalDiscounts: Math.round(totalDiscounts),
+        },
       },
     });
   } catch (error) {

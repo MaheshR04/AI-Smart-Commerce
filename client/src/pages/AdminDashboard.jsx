@@ -560,6 +560,120 @@ export const AdminDashboard = () => {
 
             </div>
 
+            {/* Top Products & Sales Reports Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              
+              {/* Top Selling Products */}
+              <div className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-1.5">
+                  <ShoppingBag className="w-4 h-4 text-sky-500" />
+                  Top Selling Products
+                </h3>
+                
+                <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+                  {analytics.topProducts && analytics.topProducts.length > 0 ? (
+                    analytics.topProducts.map((prod, idx) => (
+                      <div key={idx} className="flex items-center justify-between border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-extrabold text-slate-400 w-4">#{idx + 1}</span>
+                          {prod.image ? (
+                            <img src={prod.image} alt={prod.name} className="w-9 h-9 object-cover rounded-xl border border-slate-100" />
+                          ) : (
+                            <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-[10px] font-bold text-slate-400 border border-slate-100">
+                              No Img
+                            </div>
+                          )}
+                          <div>
+                            <h4 className="text-xs font-bold text-slate-700 line-clamp-1">{prod.name}</h4>
+                            <span className="text-[9px] font-semibold text-slate-400">{prod.unitsSold} units sold</span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-extrabold text-slate-800 shrink-0">₹{prod.revenue.toLocaleString('en-IN')}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 py-6 text-center">No product sales logged yet.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Sales Performance Reports */}
+              <div className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center justify-between gap-1.5">
+                  <span className="flex items-center gap-1.5">
+                    <Percent className="w-4.5 h-4.5 text-sky-500" />
+                    Sales & Performance Reports
+                  </span>
+                  <button
+                    onClick={() => window.print()}
+                    className="px-2.5 py-1 text-[9px] font-extrabold text-sky-600 bg-sky-50 border border-sky-100 rounded-lg hover:bg-sky-100 transition-colors cursor-pointer shrink-0"
+                  >
+                    Print Report
+                  </button>
+                </h3>
+
+                <div className="space-y-4 text-xs font-semibold text-slate-600">
+                  {analytics.reports ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-slate-50 border border-slate-100 p-3 rounded-2xl">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Average Order Value</span>
+                          <span className="text-base font-extrabold text-slate-800 block mt-1">
+                            ₹{analytics.counters.totalOrders > 0
+                              ? Math.round(analytics.counters.totalRevenue / analytics.counters.totalOrders).toLocaleString('en-IN')
+                              : 0}
+                          </span>
+                          <span className="text-[8px] text-slate-400 font-semibold block mt-0.5">AOV per Checkout</span>
+                        </div>
+
+                        <div className="bg-slate-50 border border-slate-100 p-3 rounded-2xl">
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Coupon Savings Disbursed</span>
+                          <span className="text-base font-extrabold text-emerald-600 block mt-1">
+                            ₹{analytics.reports.totalDiscounts.toLocaleString('en-IN')}
+                          </span>
+                          <span className="text-[8px] text-emerald-500 font-semibold block mt-0.5">Total Coupon Reductions</span>
+                        </div>
+                      </div>
+
+                      {/* COD vs Razorpay shares progress visualizer */}
+                      <div className="space-y-2.5 pt-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Gateway Revenue Shares</span>
+                        
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px]">
+                            <span className="font-bold text-slate-600">Razorpay Online ({analytics.reports.online.count} orders)</span>
+                            <span className="font-extrabold text-slate-800">₹{analytics.reports.online.revenue.toLocaleString('en-IN')} ({Math.round((analytics.reports.online.revenue / analytics.counters.totalRevenue) * 100) || 0}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-emerald-500 h-full rounded-full transition-all"
+                              style={{ width: `${Math.round((analytics.reports.online.revenue / analytics.counters.totalRevenue) * 100) || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px]">
+                            <span className="font-bold text-slate-600">Cash on Delivery ({analytics.reports.cod.count} orders)</span>
+                            <span className="font-extrabold text-slate-800">₹{analytics.reports.cod.revenue.toLocaleString('en-IN')} ({Math.round((analytics.reports.cod.revenue / analytics.counters.totalRevenue) * 100) || 0}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div
+                              className="bg-amber-500 h-full rounded-full transition-all"
+                              style={{ width: `${Math.round((analytics.reports.cod.revenue / analytics.counters.totalRevenue) * 100) || 0}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-slate-400 py-6 text-center">No report data populated.</p>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
             {/* Inventory Alerts section */}
             {analytics.lowStockAlerts.length > 0 && (
               <div className="bg-white border border-rose-200/60 rounded-2xl p-6 shadow-sm space-y-4">
