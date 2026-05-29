@@ -79,6 +79,10 @@ export const createOrder = async (req, res, next) => {
       }
     }
 
+    // Add Shipping Charges (₹99 for orders below ₹1000)
+    const shippingCharges = finalPayable > 0 && finalPayable < 1000 ? 99 : 0;
+    finalPayable += shippingCharges;
+
     // Initialize Order
     const orderData = {
       userId: req.user._id,

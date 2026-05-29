@@ -19,10 +19,23 @@ The codebase is structured to serve as a robust, scalable foundation, preparing 
 - **Shopping Cart & Wishlist**: Real-time local state synchronization persisting to the database.
 - **Transactions Snapshots**: Capture static item prices at checkout to insulate against future pricing changes.
 
-### 💳 Dynamic Order Checkout
-- **Razorpay Payments**: Seamless frontend SDK integration with cryptographically secure backend signature checks.
-- **Cash on Delivery (COD)**: Alternate local payment method with automated delivered-cash reconciliations.
-- **Restocking Logic**: Automatic stock level adjustments on order placement and restocking on cancel.
+### 💳 Promo Coupons & Address Manager
+- **Dynamic Promo Coupon Engine**: Fully functional coupon code validations (`WELCOME10`, `FLAT500`) checking active status, minimum thresholds, and calendars, with automatic calculation at checkout.
+- **Saved Address Book**: Support for multiple shipping address entries per user with instant default toggles and single-click checkout pre-population.
+
+### 🛍 Discover & Curated Homepage Experience
+- **Interactive Promo Carousel**: Rotating promotional banners linking directly to product category directory views.
+- **Discovery Feeds**: Structured homepage rendering "Featured Collections" ($rating \geq 4$), "Trending Hot Deals" (discounted prices), "New Arrivals", and "Recently Viewed Products" loaded from client local storage history.
+- **Navbar Auto-Complete Search**: Real-time 300ms debounced search suggestion panels displaying matching brand badges, image thumbnails, and pricing.
+
+### 🔍 Advanced Filter Sidebar & Sorting
+- **Refinement Controls**: Multi-layered search filtering options including category buttons, gold-star rating thresholds, stock availability status, and customizable price boundaries.
+- **Sort Priorities**: Sort lists instantly by Price: Low to High, Price: High to Low, Newest First, Best Rated, or Most Popular.
+
+### 🧮 Comprehensive Price & Inclusive Tax Math
+- **Inclusive Tax**: Computes and displays **Estimated GST (18% Included)** using the standard retail tax formula: `Subtotal - (Subtotal / 1.18)`.
+- **Dynamic Shipping Logic**: Appends a flat **₹99** delivery fee for net subtotals below ₹1000, displaying an incentive text showing remaining spend for **FREE Delivery** (for orders ₹1000 & above).
+- **Backend Sync Verification**: Recalculates and validates pricing totals server-side during checkout creation to match payment gateway sessions and database logs flawlessly.
 
 ### 🛠 Administrative Control Center
 - **Product Inventory Manager**: Complete CRUD workspace with dynamic specifications key-value fields.

@@ -156,19 +156,32 @@ export const Cart = () => {
                 <span className="font-bold text-slate-700">₹{cartTotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Delivery Charges</span>
-                <span className="text-emerald-600 font-bold">FREE Delivery</span>
+                <span>Estimated GST (18% Included)</span>
+                <span className="font-semibold text-slate-500">₹{Math.round(cartTotal - (cartTotal / 1.18)).toLocaleString('en-IN')}</span>
               </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Delivery Charges</span>
+                {cartTotal > 0 && cartTotal < 1000 ? (
+                  <span className="font-bold text-slate-700">₹99</span>
+                ) : (
+                  <span className="text-emerald-600 font-bold">FREE Delivery</span>
+                )}
+              </div>
+              {cartTotal > 0 && cartTotal < 1000 && (
+                <p className="text-[10px] text-slate-400 font-semibold leading-snug">
+                  Add <span className="text-sky-500 font-bold">₹{1000 - cartTotal}</span> more to qualify for <span className="text-emerald-600 font-bold">FREE Delivery</span>!
+                </p>
+              )}
               
               <div className="border-t border-slate-100 pt-3 flex justify-between text-slate-800 text-sm font-extrabold">
                 <span>Order Total</span>
-                <span className="text-sky-600">₹{cartTotal.toLocaleString('en-IN')}</span>
+                <span className="text-sky-600">₹{(cartTotal + (cartTotal > 0 && cartTotal < 1000 ? 99 : 0)).toLocaleString('en-IN')}</span>
               </div>
             </div>
 
             <button
               onClick={() => navigate('/checkout')}
-              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white rounded-xl font-bold shadow-md shadow-sky-100 transition-all duration-200 active:scale-[0.99]"
+              className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white rounded-xl font-bold shadow-md shadow-sky-100 transition-all duration-200 active:scale-[0.99] cursor-pointer"
             >
               Proceed to Checkout
               <ChevronRight className="w-4 h-4" />

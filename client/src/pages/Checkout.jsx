@@ -198,7 +198,12 @@ export const Checkout = () => {
     }
   };
 
-  const finalPayable = appliedCoupon ? appliedCoupon.payableAmount : cartTotal;
+  const subtotal = cartTotal;
+  const discount = appliedCoupon ? appliedCoupon.discountAmount : 0;
+  const afterDiscount = subtotal - discount;
+  const shippingCharges = afterDiscount > 0 && afterDiscount < 1000 ? 99 : 0;
+  const taxAmount = afterDiscount - (afterDiscount / 1.18); // 18% inclusive GST
+  const finalPayable = afterDiscount + shippingCharges;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 space-y-6">
@@ -335,17 +340,25 @@ export const Checkout = () => {
             <div className="border-t border-slate-100 pt-4 space-y-2 text-xs">
               <div className="flex justify-between text-slate-400">
                 <span>Items Subtotal</span>
-                <span className="font-semibold text-slate-600">₹{cartTotal.toLocaleString('en-IN')}</span>
+                <span className="font-semibold text-slate-600">₹{subtotal.toLocaleString('en-IN')}</span>
               </div>
               {appliedCoupon && (
                 <div className="flex justify-between text-emerald-600 font-bold">
                   <span>Coupon Discount ({appliedCoupon.code})</span>
-                  <span>- ₹{appliedCoupon.discountAmount.toLocaleString('en-IN')}</span>
+                  <span>- ₹{discount.toLocaleString('en-IN')}</span>
                 </div>
               )}
               <div className="flex justify-between text-slate-400">
+                <span>Estimated GST (18% Included)</span>
+                <span className="font-semibold text-slate-500">₹{Math.round(taxAmount).toLocaleString('en-IN')}</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
                 <span>Shipping Charges</span>
-                <span className="text-emerald-600 font-bold">FREE Delivery</span>
+                {shippingCharges > 0 ? (
+                  <span className="font-bold text-slate-700">₹{shippingCharges}</span>
+                ) : (
+                  <span className="text-emerald-600 font-bold">FREE Delivery</span>
+                )}
               </div>
               <div className="border-t border-slate-100 pt-3 flex justify-between text-sm font-extrabold text-slate-800">
                 <span>Total Payable</span>
