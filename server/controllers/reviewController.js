@@ -78,3 +78,77 @@ export const createProductReview = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc    Get reviews written by logged-in user
+ * @route   GET /api/reviews/myreviews
+ * @access  Private
+ */
+export const getMyReviews = async (req, res, next) => {
+  try {
+    const reviews = await Review.find({ userId: req.user._id })
+      .populate('productId', 'name brand images category')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, count: reviews.length, data: reviews });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get all reviews in platform (Admin only)
+ * @route   GET /api/reviews
+ * @access  Private/Admin
+ */
+export const getAllReviews = async (req, res, next) => {
+  try {
+    const reviews = await Review.find({})
+      .populate('userId', 'name email')
+      .populate('productId', 'name brand')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, count: reviews.length, data: reviews });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Delete review (Admin moderator or owner)
+ * @route   DELETE /api/reviews/:id
+ * @access  Private
+ */
+export const deleteReview = async (req, res, next) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) {
+      res.status(404);
+      throw new Error('Review not found');
+    }
+
+    // Authorization check
+    if (review.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      res.status(403);
+      throw new Error('Not authorized to delete this review');
+    }
+
+    const productId = review.productId;
+    await Review.findByIdAndDelete(req.params.id);
+
+    // Recalculate average rating for the product
+    const reviewsForProduct = await Review.find({ productId });
+    const totalRating = reviewsForProduct.reduce((acc, item) => item.rating + acc, 0);
+    const avgRating = reviewsForProduct.length > 0 ? (totalRating / reviewsForProduct.length) : 0;
+
+    const product = await Product.findById(productId);
+    if (product) {
+      product.rating = Math.round(avgRating * 10) / 10;
+      await product.save();
+    }
+
+    res.json({ success: true, message: 'Review removed successfully' });
+  } catch (error) {
+    next(error);
+  }
+};

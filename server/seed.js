@@ -8,6 +8,7 @@ import Review from './models/Review.js';
 import Cart from './models/Cart.js';
 import Wishlist from './models/Wishlist.js';
 import Order from './models/Order.js';
+import Coupon from './models/Coupon.js';
 
 dotenv.config();
 
@@ -149,6 +150,7 @@ const seedDatabase = async () => {
     await Cart.deleteMany();
     await Wishlist.deleteMany();
     await Order.deleteMany();
+    await Coupon.deleteMany();
     console.log('Database collections cleared.');
 
     // Seed Categories
@@ -195,6 +197,28 @@ const seedDatabase = async () => {
       comment: 'Excellent headphones. Clear acoustics and comfortable during long sessions.',
     });
     console.log('Mock product review created.');
+
+    // Seed Coupons
+    console.log('Seeding coupons...');
+    await Coupon.insertMany([
+      {
+        code: 'WELCOME10',
+        discountType: 'Percentage',
+        discountValue: 10,
+        minPurchase: 1000,
+        expiryDate: new Date('2030-12-31'),
+        isActive: true,
+      },
+      {
+        code: 'FLAT500',
+        discountType: 'Fixed',
+        discountValue: 500,
+        minPurchase: 5000,
+        expiryDate: new Date('2030-12-31'),
+        isActive: true,
+      },
+    ]);
+    console.log('Mock coupons seeded.');
 
     console.log('Seeding process completed successfully.');
     process.exit(0);

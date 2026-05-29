@@ -1,6 +1,7 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Cart from '../models/Cart.js';
+import Coupon from '../models/Coupon.js';
 import { getRazorpayInstance } from '../config/razorpay.js';
 import crypto from 'crypto';
 
@@ -10,7 +11,7 @@ import crypto from 'crypto';
  * @access  Private
  */
 export const createOrder = async (req, res, next) => {
-  const { products, shippingAddress, paymentMethod } = req.body;
+  const { products, shippingAddress, paymentMethod, couponCode } = req.body;
 
   try {
     if (!products || products.length === 0) {
@@ -47,13 +48,46 @@ export const createOrder = async (req, res, next) => {
       });
     }
 
+    // Calculate Coupon Discount
+    let discountAmount = 0;
+    let finalPayable = calculatedTotal;
+
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+      if (coupon) {
+        if (new Date(coupon.expiryDate) < new Date()) {
+          res.status(400);
+          throw new Error('The applied coupon has expired.');
+        }
+
+        if (calculatedTotal < coupon.minPurchase) {
+          res.status(400);
+          throw new Error(`Minimum purchase of ₹${coupon.minPurchase} is required for coupon ${coupon.code}.`);
+        }
+
+        if (coupon.discountType === 'Percentage') {
+          discountAmount = (calculatedTotal * coupon.discountValue) / 100;
+        } else {
+          discountAmount = coupon.discountValue;
+        }
+
+        if (discountAmount > calculatedTotal) {
+          discountAmount = calculatedTotal;
+        }
+
+        finalPayable = calculatedTotal - discountAmount;
+      }
+    }
+
     // Initialize Order
     const orderData = {
       userId: req.user._id,
       products: verifiedProducts,
       shippingAddress,
       paymentMethod,
-      totalAmount: calculatedTotal,
+      couponCode: couponCode ? couponCode.toUpperCase() : undefined,
+      discountAmount: Math.round(discountAmount * 100) / 100,
+      totalAmount: Math.round(finalPayable * 100) / 100,
     };
 
     // Handle payment method specific flows
@@ -63,7 +97,7 @@ export const createOrder = async (req, res, next) => {
       if (razorpay) {
         // Active key configuration
         const options = {
-          amount: Math.round(calculatedTotal * 100), // Razorpay accepts in paise
+          amount: Math.round(finalPayable * 100), // Razorpay accepts in paise
           currency: 'INR',
           receipt: `receipt_${Date.now()}`,
         };

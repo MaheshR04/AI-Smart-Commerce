@@ -13,6 +13,8 @@ import cartRoutes from './routes/cartRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import couponRoutes from './routes/couponRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -42,6 +44,8 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Root Endpoint
 app.get('/', (req, res) => {

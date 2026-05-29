@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Truck, CreditCard, DollarSign } from 'lucide-react';
 
-export const CheckoutForm = ({ onSubmit, isSubmitting }) => {
+export const CheckoutForm = ({ onSubmit, isSubmitting, initialAddress }) => {
   const [formData, setFormData] = useState({
     street: '',
     city: '',
@@ -10,6 +10,19 @@ export const CheckoutForm = ({ onSubmit, isSubmitting }) => {
     country: 'India',
     phone: '',
   });
+
+  useEffect(() => {
+    if (initialAddress) {
+      setFormData({
+        street: initialAddress.street || '',
+        city: initialAddress.city || '',
+        state: initialAddress.state || '',
+        postalCode: initialAddress.postalCode || '',
+        country: initialAddress.country || 'India',
+        phone: initialAddress.phone || '',
+      });
+    }
+  }, [initialAddress]);
 
   const [paymentMethod, setPaymentMethod] = useState('COD');
   const [error, setError] = useState('');

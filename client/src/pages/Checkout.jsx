@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import CheckoutForm from '../components/CheckoutForm';
-import { ShieldAlert, CreditCard, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, CreditCard, ArrowLeft, MapPin, Tag } from 'lucide-react';
 import API from '../services/api';
 
 export const Checkout = () => {
@@ -11,7 +11,18 @@ export const Checkout = () => {
   const { user } = useContext(AuthContext);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  
+
+  // Coupon state fields
+  const [couponInput, setCouponInput] = useState('');
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponSuccess, setCouponSuccess] = useState('');
+
+  // Saved Addresses
+  const savedAddresses = user?.addresses || [];
+  const [selectedAddress, setSelectedAddress] = useState(null);
+
   const navigate = useNavigate();
 
   const cartTotal = getCartTotal();
@@ -23,6 +34,13 @@ export const Checkout = () => {
       navigate('/cart');
     }
   }, [cartItemsCount, navigate]);
+
+  useEffect(() => {
+    if (savedAddresses.length > 0 && !selectedAddress) {
+      const defaultAddr = savedAddresses.find((addr) => addr.isDefault);
+      setSelectedAddress(defaultAddr || savedAddresses[0]);
+    }
+  }, [user, savedAddresses, selectedAddress]);
 
   // Load Razorpay Script dynamically on client
   const loadRazorpaySDK = () => {
@@ -37,6 +55,33 @@ export const Checkout = () => {
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setApplyingCoupon(true);
+    setCouponError('');
+    setCouponSuccess('');
+    try {
+      const response = await API.post('/coupons/apply', {
+        code: couponInput.trim(),
+        orderTotal: cartTotal,
+      });
+      setAppliedCoupon(response.data.data);
+      setCouponSuccess(response.data.message);
+    } catch (err) {
+      setCouponError(err.response?.data?.message || 'Failed to apply coupon.');
+      setAppliedCoupon(null);
+    } finally {
+      setApplyingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponSuccess('');
+    setCouponError('');
   };
 
   const handleCheckoutSubmit = async ({ shippingAddress, paymentMethod }) => {
@@ -55,6 +100,7 @@ export const Checkout = () => {
         products: orderProducts,
         shippingAddress,
         paymentMethod,
+        couponCode: appliedCoupon ? appliedCoupon.code : undefined,
       });
 
       const { data: order } = response.data;
@@ -80,7 +126,7 @@ export const Checkout = () => {
         if (razorpayOrderId && razorpayOrderId.startsWith('order_mock_')) {
           // Trigger a simulated browser popup
           const confirmPayment = window.confirm(
-            `[Payments Sandbox] Order ${order._id} created successfully.\n\nTotal: ₹${cartTotal.toLocaleString('en-IN')}\n\nWould you like to simulate a successful Razorpay transaction?`
+            `[Payments Sandbox] Order ${order._id} created successfully.\n\nTotal: ₹${order.totalAmount.toLocaleString('en-IN')}\n\nWould you like to simulate a successful Razorpay transaction?`
           );
 
           if (confirmPayment) {
@@ -152,6 +198,8 @@ export const Checkout = () => {
     }
   };
 
+  const finalPayable = appliedCoupon ? appliedCoupon.payableAmount : cartTotal;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 space-y-6">
       
@@ -171,9 +219,49 @@ export const Checkout = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
-        {/* Left Column: Form inputs */}
-        <div className="lg:col-span-2">
-          <CheckoutForm onSubmit={handleCheckoutSubmit} isSubmitting={submitting} />
+        {/* Left Column: Saved Addresses selection & Form inputs */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Saved Addresses quick selection */}
+          {savedAddresses.length > 0 && (
+            <div className="bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-4">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-sky-500" />
+                Select Saved Address
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {savedAddresses.map((addr) => (
+                  <div
+                    key={addr._id}
+                    onClick={() => setSelectedAddress(addr)}
+                    className={`border rounded-xl p-4 cursor-pointer transition-all duration-200 text-xs font-semibold text-slate-600 leading-relaxed hover:bg-slate-50 flex flex-col justify-between ${
+                      selectedAddress?._id === addr._id
+                        ? 'border-sky-500 bg-sky-50/50 ring-2 ring-sky-100'
+                        : 'border-slate-200'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="font-bold text-slate-800 truncate max-w-[120px]">{addr.street}</span>
+                        {addr.isDefault && (
+                          <span className="text-[8px] font-extrabold uppercase bg-sky-50 text-sky-600 border border-sky-100 px-1.5 py-0.5 rounded-md">
+                            Default
+                          </span>
+                        )}
+                      </div>
+                      <p>{addr.city}, {addr.state} - {addr.postalCode}</p>
+                      <p className="mt-1 text-[10px] text-slate-400 font-bold">{addr.phone}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <CheckoutForm
+            onSubmit={handleCheckoutSubmit}
+            isSubmitting={submitting}
+            initialAddress={selectedAddress}
+          />
           {error && <p className="text-xs font-bold text-red-500 mt-4">{error}</p>}
         </div>
 
@@ -205,19 +293,63 @@ export const Checkout = () => {
               })}
             </div>
 
+            {/* Coupon Code section */}
+            <div className="border-t border-slate-100 pt-4 space-y-3">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-sky-500" />
+                Apply Coupon
+              </h4>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter code (e.g. WELCOME10)"
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value)}
+                  disabled={!!appliedCoupon}
+                  className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-sky-500 uppercase font-semibold"
+                />
+                {appliedCoupon ? (
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-500 text-xs font-bold rounded-xl border border-red-100 transition-colors"
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={applyingCoupon || !couponInput.trim()}
+                    className="px-4 py-1.5 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-100 disabled:text-slate-400 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+                  >
+                    {applyingCoupon ? '...' : 'Apply'}
+                  </button>
+                )}
+              </div>
+              {couponError && <p className="text-[10px] font-bold text-red-500">{couponError}</p>}
+              {couponSuccess && <p className="text-[10px] font-bold text-emerald-600">{couponSuccess}</p>}
+            </div>
+
             {/* Calculations summaries */}
             <div className="border-t border-slate-100 pt-4 space-y-2 text-xs">
               <div className="flex justify-between text-slate-400">
                 <span>Items Subtotal</span>
                 <span className="font-semibold text-slate-600">₹{cartTotal.toLocaleString('en-IN')}</span>
               </div>
+              {appliedCoupon && (
+                <div className="flex justify-between text-emerald-600 font-bold">
+                  <span>Coupon Discount ({appliedCoupon.code})</span>
+                  <span>- ₹{appliedCoupon.discountAmount.toLocaleString('en-IN')}</span>
+                </div>
+              )}
               <div className="flex justify-between text-slate-400">
                 <span>Shipping Charges</span>
                 <span className="text-emerald-600 font-bold">FREE Delivery</span>
               </div>
               <div className="border-t border-slate-100 pt-3 flex justify-between text-sm font-extrabold text-slate-800">
                 <span>Total Payable</span>
-                <span className="text-sky-600">₹{cartTotal.toLocaleString('en-IN')}</span>
+                <span className="text-sky-600">₹{finalPayable.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
@@ -239,3 +371,4 @@ export const Checkout = () => {
 };
 
 export default Checkout;
+
