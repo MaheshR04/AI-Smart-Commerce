@@ -1,11 +1,13 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { AuthContext } from './AuthContext';
+import { ToastContext } from './ToastContext';
 import API from '../services/api';
 
 export const ShopContext = createContext();
 
 export const ShopProvider = ({ children }) => {
   const { token } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [wishlist, setWishlist] = useState({ products: [] });
@@ -81,14 +83,25 @@ export const ShopProvider = ({ children }) => {
   // Toggle items in wishlist
   const toggleWishlist = async (productId) => {
     if (!token) {
+      addToast('Please log in to manage your wishlist.', 'error');
       throw new Error('Please log in to add items to your wishlist.');
     }
     try {
       const response = await API.post('/wishlist/toggle', { productId });
       setWishlist(response.data.data);
+      
+      const isAdded = response.data.data.products.some(
+        (item) => (item._id || item).toString() === productId.toString()
+      );
+      if (isAdded) {
+        addToast('Product added to wishlist.', 'success');
+      } else {
+        addToast('Product removed from wishlist.', 'info');
+      }
       return response.data;
     } catch (error) {
       const errMsg = error.response?.data?.message || 'Wishlist operation failed';
+      addToast(errMsg, 'error');
       throw new Error(errMsg);
     }
   };

@@ -1,10 +1,12 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { ToastContext } from '../context/ToastContext';
 import { Star, MessageSquare, Send, User, Trash2, Pencil } from 'lucide-react';
 import API from '../services/api';
 
 export const ReviewSection = ({ productId }) => {
   const { token, user } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [rating, setRating] = useState(5);
@@ -62,6 +64,7 @@ export const ReviewSection = ({ productId }) => {
     e.preventDefault();
     if (!comment.trim()) {
       setSubmitError('Please write a comment');
+      addToast('Please write a review comment.', 'error');
       return;
     }
 
@@ -77,6 +80,7 @@ export const ReviewSection = ({ productId }) => {
       });
 
       setSubmitSuccess(true);
+      addToast(isEditing ? 'Review updated successfully.' : 'Review submitted successfully.', 'success');
       
       // Reload reviews to trigger pre-population updates
       await fetchReviews();
@@ -84,7 +88,9 @@ export const ReviewSection = ({ productId }) => {
       // Auto fade success message
       setTimeout(() => setSubmitSuccess(false), 3000);
     } catch (error) {
-      setSubmitError(error.response?.data?.message || 'Failed to submit review');
+      const errMsg = error.response?.data?.message || 'Failed to submit review';
+      setSubmitError(errMsg);
+      addToast(errMsg, 'error');
     } finally {
       setSubmitLoading(false);
     }
@@ -96,6 +102,7 @@ export const ReviewSection = ({ productId }) => {
       await API.delete(`/reviews/${reviewId}`);
       setSubmitSuccess(true);
       setSubmitError('');
+      addToast('Review deleted successfully.', 'info');
       
       // Reset state
       setComment('');
@@ -108,7 +115,9 @@ export const ReviewSection = ({ productId }) => {
       
       setTimeout(() => setSubmitSuccess(false), 3000);
     } catch (error) {
-      setSubmitError(error.response?.data?.message || 'Failed to delete review');
+      const errMsg = error.response?.data?.message || 'Failed to delete review';
+      setSubmitError(errMsg);
+      addToast(errMsg, 'error');
     }
   };
 

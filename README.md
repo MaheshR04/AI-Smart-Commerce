@@ -8,16 +8,21 @@ The codebase is structured to serve as a robust, scalable foundation, preparing 
 
 ## 🚀 Key Features
 
-### 🔐 Security & Access Controls
-- **JWT Session Security**: Secure API endpoints guarded by custom JSON Web Token parsing middlewares.
-- **Bcrypt Hashing**: User credentials securely encrypted using pre-save hashing hooks.
-- **Administrative Roles**: Strict routing guards separating Customer pages from Admin tools.
+### 🔐 Advanced Security & Access Controls
+- **MongoDB NoSQL Injection Protection**: Global recursive sanitizer middleware detecting and stripping query parameters starting with `$` or containing `.`.
+- **XSS Script Injection Protection**: Global recursive XSS sanitizing middleware stripping script blocks, event handlers, and escaping tags.
+- **Flexible IP Rate Limiting**: Customized in-memory rate limiting applied generally (max 300 requests/15 mins) and strictly on auth routes (max 30 requests/15 mins).
+- **JWT Session Security**: Strict JSON Web Token validation guarding all private user and administrator endpoints.
+- **Bcrypt Hashing**: Secure user password encryption using pre-save hashing hooks inside User models.
+- **Role-Based Access Control (RBAC)**: Custom middlewares segregating user customer accounts from administrator capabilities.
+- **Data Payload Validations**: Robust input validation middlewares checking formats, limits, and fields for registers, logins, reviews, and address books.
 
-### 📦 Robust Database Collections (Mongoose)
-- **Advanced Product Catalog**: Supports text indexing, pricing validations, stock levels, and embedded specifications array.
-- **Dynamic Rating Aggregations**: Review submissions automatically compute and cache product average ratings.
-- **Shopping Cart & Wishlist**: Real-time local state synchronization persisting to the database, supporting granular quantity edits and wishlist saves.
-- **Transactions Snapshots**: Capture static item prices at checkout to insulate against future pricing changes.
+### 🎨 Visual UX & Premium Interface Polish
+- **Persisted Selector Dark Mode**: Selector-based theme switching (`darkMode: 'class'`) with Sun/Moon navigation controls, persisting selections in `localStorage` and syncing with system defaults.
+- **Pulsating Skeletons Grid**: Customized `<SkeletonCard />` component replacing full-page indicators with interactive pulsating card layouts on loading lists.
+- **Custom Catch-All Error Canvas**: Beautiful illustrated 404 NotFound page fallback route replacing silent redirects.
+- **Global Toast Alerts Context**: Instantiated floating, sliding toast alerts for authentication status, cart actions, wishlist toggles, address updates, and review submittals.
+- **Debounced Suggestions Autocomplete**: autocompleting search inputs in Navbar using 300ms typing debounces.
 
 ### 💳 Promo Coupons, Address book & Save for Later
 - **Dynamic Promo Coupon Engine**: Fully functional coupon code validations (`WELCOME10`, `FLAT500`) checking active status, minimum thresholds, and calendars, with automatic calculation at checkout.

@@ -2,6 +2,7 @@ import { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
+import { ToastContext } from '../context/ToastContext';
 import CheckoutForm from '../components/CheckoutForm';
 import { ShieldAlert, CreditCard, ArrowLeft, MapPin, Tag, Plus } from 'lucide-react';
 import API from '../services/api';
@@ -9,6 +10,7 @@ import API from '../services/api';
 export const Checkout = () => {
   const { cart, getCartTotal, clearCart } = useContext(CartContext);
   const { user, updateUserAddresses } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -69,9 +71,12 @@ export const Checkout = () => {
       });
       setAppliedCoupon(response.data.data);
       setCouponSuccess(response.data.message);
+      addToast('Coupon code applied successfully.', 'success');
     } catch (err) {
-      setCouponError(err.response?.data?.message || 'Failed to apply coupon.');
+      const errMsg = err.response?.data?.message || 'Failed to apply coupon.';
+      setCouponError(errMsg);
       setAppliedCoupon(null);
+      addToast(errMsg, 'error');
     } finally {
       setApplyingCoupon(false);
     }
@@ -82,6 +87,7 @@ export const Checkout = () => {
     setCouponInput('');
     setCouponSuccess('');
     setCouponError('');
+    addToast('Coupon code removed.', 'info');
   };
 
   const handleCheckoutSubmit = async ({ shippingAddress, paymentMethod, saveAddress }) => {

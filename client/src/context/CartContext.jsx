@@ -1,11 +1,13 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { AuthContext } from './AuthContext';
+import { ToastContext } from './ToastContext';
 import API from '../services/api';
 
 export const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const { token } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
   const [cart, setCart] = useState({ products: [] });
   const [loading, setLoading] = useState(false);
 
@@ -39,9 +41,11 @@ export const CartProvider = ({ children }) => {
     try {
       const response = await API.post('/cart', { productId, quantity });
       setCart(response.data.data);
+      addToast('Product successfully added to cart.', 'success');
       return response.data;
     } catch (error) {
       const errMsg = error.response?.data?.message || 'Failed to add item to cart';
+      addToast(errMsg, 'error');
       throw new Error(errMsg);
     }
   };
@@ -51,9 +55,11 @@ export const CartProvider = ({ children }) => {
     try {
       const response = await API.put('/cart', { productId, quantity });
       setCart(response.data.data);
+      addToast('Cart item count updated.', 'success');
       return response.data;
     } catch (error) {
       const errMsg = error.response?.data?.message || 'Failed to update cart quantity';
+      addToast(errMsg, 'error');
       throw new Error(errMsg);
     }
   };
@@ -63,9 +69,11 @@ export const CartProvider = ({ children }) => {
     try {
       const response = await API.delete(`/cart/${productId}`);
       setCart(response.data.data);
+      addToast('Item successfully removed from cart.', 'info');
       return response.data;
     } catch (error) {
       const errMsg = error.response?.data?.message || 'Failed to remove item from cart';
+      addToast(errMsg, 'error');
       throw new Error(errMsg);
     }
   };
@@ -75,9 +83,11 @@ export const CartProvider = ({ children }) => {
     try {
       const response = await API.post('/cart/clear');
       setCart(response.data.data || { products: [] });
+      addToast('Shopping cart cleared successfully.', 'info');
       return response.data;
     } catch (error) {
       console.error('Failed to clear cart:', error.message);
+      addToast('Failed to clear cart.', 'error');
     }
   };
 

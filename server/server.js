@@ -4,6 +4,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import connectDB from './config/db.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { mongoSanitize, xssClean, apiRateLimiter } from './middleware/security.js';
 
 // Route Imports
 import userRoutes from './routes/userRoutes.js';
@@ -31,6 +32,11 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Global Security Protections
+app.use(mongoSanitize);
+app.use(xssClean);
+app.use('/api', apiRateLimiter);
 
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));

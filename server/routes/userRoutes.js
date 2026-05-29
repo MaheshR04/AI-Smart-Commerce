@@ -13,12 +13,18 @@ import {
 } from '../controllers/userController.js';
 import { protect } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/admin.js';
+import {
+  authRateLimiter,
+  validateUserRegister,
+  validateUserLogin,
+  validateAddressInput,
+} from '../middleware/security.js';
 
 const router = express.Router();
 
 // Public routes
-router.post('/register', registerUser);
-router.post('/login', loginUser);
+router.post('/register', authRateLimiter, validateUserRegister, registerUser);
+router.post('/login', authRateLimiter, validateUserLogin, loginUser);
 
 // Personal profile routes
 router.route('/profile')
@@ -27,7 +33,7 @@ router.route('/profile')
 
 // Saved addresses routes
 router.route('/address')
-  .post(protect, addAddress);
+  .post(protect, validateAddressInput, addAddress);
 router.route('/address/:addressId')
   .delete(protect, deleteAddress);
 router.route('/address/:addressId/default')

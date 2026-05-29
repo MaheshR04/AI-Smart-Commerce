@@ -8,13 +8,14 @@ import {
 } from '../controllers/reviewController.js';
 import { protect } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/admin.js';
+import { validateReviewInput } from '../middleware/security.js';
 
 const router = express.Router();
 
 // Secured Routes
 router.route('/')
   .get(protect, adminOnly, getAllReviews)
-  .post(protect, createProductReview);
+  .post(protect, validateReviewInput, createProductReview);
 
 router.route('/myreviews')
   .get(protect, getMyReviews);

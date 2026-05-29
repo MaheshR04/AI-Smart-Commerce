@@ -1,6 +1,7 @@
 import { useContext, useState, useEffect } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import ProductCard from '../components/ProductCard';
+import SkeletonCard from '../components/SkeletonCard';
 import { Filter, SlidersHorizontal, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight, Sparkles, ArrowRight, Eye, Star, ShoppingBag } from 'lucide-react';
 
 export const Home = () => {
@@ -445,9 +446,10 @@ export const Home = () => {
 
             {/* Grid list of Products */}
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200/60 rounded-2xl">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-sky-500"></div>
-                <p className="text-xs font-medium text-slate-400 mt-4">Refreshing catalog list...</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <SkeletonCard key={idx} />
+                ))}
               </div>
             ) : products.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

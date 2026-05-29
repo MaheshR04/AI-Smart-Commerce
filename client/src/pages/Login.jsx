@@ -1,10 +1,12 @@
 import { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { ToastContext } from '../context/ToastContext';
 import { ShoppingBag, Lock, Mail, ArrowRight } from 'lucide-react';
 
 export const Login = () => {
   const { login, token, error: authError } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,8 +37,11 @@ export const Login = () => {
     setLoading(true);
     try {
       await login(email, password);
+      addToast('Signed in successfully.', 'success');
     } catch (err) {
-      setError(err.message || 'Invalid email or password.');
+      const errMsg = err.message || 'Invalid email or password.';
+      setError(errMsg);
+      addToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }

@@ -89,9 +89,36 @@ export const ProductDetails = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
-        <p className="text-slate-500 mt-4 font-semibold text-xs">Loading product details...</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full animate-pulse space-y-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+          {/* Left: Product Images Gallery Skeleton */}
+          <div className="space-y-4">
+            <div className="aspect-square w-full bg-slate-200 dark:bg-slate-700 rounded-3xl"></div>
+            <div className="flex gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+              ))}
+            </div>
+          </div>
+          {/* Right: Product Details Skeleton */}
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              <div className="h-8 w-5/6 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+              <div className="h-4 w-40 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            </div>
+            <div className="h-10 w-48 bg-slate-200 dark:bg-slate-700 rounded-xl py-2"></div>
+            <div className="space-y-2.5">
+              <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              <div className="h-4 w-full bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+              <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            </div>
+            <div className="flex items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="h-12 w-28 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+              <div className="h-12 flex-1 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

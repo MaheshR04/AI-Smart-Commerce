@@ -1,10 +1,12 @@
 import { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { ToastContext } from '../context/ToastContext';
 import { ShoppingBag, Lock, Mail, User, ArrowRight } from 'lucide-react';
 
 export const Register = () => {
   const { register, token, error: authError } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,25 +29,31 @@ export const Register = () => {
 
     if (!name || !email || !password || !confirmPassword) {
       setError('Please fill in all input fields.');
+      addToast('Please fill in all input fields.', 'error');
       return;
     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      addToast('Passwords do not match.', 'error');
       return;
     }
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters.');
+      addToast('Password must be at least 6 characters.', 'error');
       return;
     }
 
     setLoading(true);
     try {
       await register(name, email, password);
+      addToast('Account created successfully. Welcome!', 'success');
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Registration failed. Try again.');
+      const errMsg = err.message || 'Registration failed. Try again.';
+      setError(errMsg);
+      addToast(errMsg, 'error');
     } finally {
       setLoading(false);
     }

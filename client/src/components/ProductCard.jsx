@@ -78,23 +78,23 @@ export const ProductCard = ({ product }) => {
   };
 
   return (
-    <div className="group relative bg-white border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col h-full">
+    <div className="group relative bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl shadow-sm hover:shadow-md dark:shadow-none hover:border-sky-200 dark:hover:border-slate-600/50 transition-all duration-300 overflow-hidden flex flex-col h-full">
       
       {/* Absolute Wishlist Button */}
       <button
         disabled={wishlistLoading}
         onClick={handleWishlistClick}
-        className={`absolute top-3 right-3 z-10 p-2.5 rounded-full border border-slate-100 bg-white/90 backdrop-blur-md shadow-sm transition-all duration-200 active:scale-90 hover:scale-105 ${
+        className={`absolute top-3 right-3 z-10 p-2.5 rounded-full border border-slate-100 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md shadow-sm transition-all duration-200 active:scale-90 hover:scale-105 ${
           isProductInWishlist
             ? 'text-rose-500 hover:text-rose-600 border-rose-50'
-            : 'text-slate-400 hover:text-rose-500'
+            : 'text-slate-400 dark:text-slate-500 hover:text-rose-500'
         }`}
       >
         <Heart className={`w-4 h-4 ${isProductInWishlist ? 'fill-current' : ''}`} />
       </button>
 
       {/* Product Image Link */}
-      <Link to={`/products/${_id}`} className="block relative aspect-square overflow-hidden bg-slate-50">
+      <Link to={`/products/${_id}`} className="block relative aspect-square overflow-hidden bg-slate-50 dark:bg-slate-900/40">
         {discountPrice > 0 && (
           <span className="absolute top-3 left-3 z-10 px-2 py-1 text-[10px] font-bold text-white bg-gradient-to-r from-rose-500 to-pink-500 rounded-lg shadow-sm">
             {discountPercent}% OFF
@@ -117,10 +117,10 @@ export const ProductCard = ({ product }) => {
 
       {/* Product Information Body */}
       <div className="p-4 flex flex-col flex-1">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{brand}</span>
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{brand}</span>
         
         <Link to={`/products/${_id}`} className="block mt-1 flex-1">
-          <h3 className="text-sm font-semibold text-slate-800 group-hover:text-sky-600 transition-colors line-clamp-2 leading-tight">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors line-clamp-2 leading-tight">
             {name}
           </h3>
         </Link>
@@ -128,19 +128,19 @@ export const ProductCard = ({ product }) => {
         {/* Rating Row */}
         <div className="flex items-center gap-1.5 mt-2">
           <div className="flex">{renderStars(rating)}</div>
-          <span className="text-[11px] font-semibold text-slate-500">{rating > 0 ? rating.toFixed(1) : 'No ratings'}</span>
+          <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">{rating > 0 ? rating.toFixed(1) : 'No ratings'}</span>
         </div>
 
         {/* Pricing & Add to Cart action */}
-        <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-100">
+        <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
           <div className="flex flex-col">
             {discountPrice > 0 ? (
               <>
-                <span className="text-xs text-slate-400 line-through">₹{price.toLocaleString('en-IN')}</span>
-                <span className="text-base font-extrabold text-slate-900">₹{discountPrice.toLocaleString('en-IN')}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500 line-through">₹{price.toLocaleString('en-IN')}</span>
+                <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">₹{discountPrice.toLocaleString('en-IN')}</span>
               </>
             ) : (
-              <span className="text-base font-extrabold text-slate-900">₹{price.toLocaleString('en-IN')}</span>
+              <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">₹{price.toLocaleString('en-IN')}</span>
             )}
           </div>
 
@@ -149,8 +149,8 @@ export const ProductCard = ({ product }) => {
             onClick={handleAddToCartClick}
             className={`p-2.5 rounded-xl border transition-all active:scale-95 duration-200 ${
               stock === 0
-                ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
-                : 'bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white hover:shadow-md hover:shadow-sky-100 border-sky-100 hover:border-sky-500'
+                ? 'bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600 border-slate-100 dark:border-slate-800 cursor-not-allowed'
+                : 'bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 hover:bg-sky-500 dark:hover:bg-sky-500 hover:text-white border-sky-100 dark:border-sky-900/40 hover:border-sky-500 dark:hover:border-sky-500'
             }`}
             title="Add to Cart"
           >

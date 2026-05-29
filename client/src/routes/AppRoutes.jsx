@@ -12,6 +12,7 @@ import Invoice from '../pages/Invoice';
 import AdminDashboard from '../pages/AdminDashboard';
 import Profile from '../pages/Profile';
 import ProtectedRoute from '../components/ProtectedRoute';
+import NotFound from '../pages/NotFound';
 
 export const AppRoutes = () => {
   return (
@@ -91,7 +92,7 @@ export const AppRoutes = () => {
       />
 
       {/* Catch-all fallback redirect */}
-      <Route path="*" element={<Home />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
