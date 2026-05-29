@@ -358,6 +358,54 @@ export const Home = () => {
               </div>
             </div>
 
+            {/* Availability Filter */}
+            <div className="space-y-2.5 pt-4 border-t border-slate-100">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Availability</h4>
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={filters.inStock}
+                  onChange={(e) => updateFilters({ inStock: e.target.checked, page: 1 })}
+                  className="rounded text-sky-500 focus:ring-sky-400 h-4 w-4 border-slate-300"
+                />
+                In Stock Only
+              </label>
+            </div>
+
+            {/* Rating Filter */}
+            <div className="space-y-3 pt-4 border-t border-slate-100">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Customer Rating</h4>
+              <div className="flex flex-col gap-1.5">
+                {[4, 3, 2].map((num) => {
+                  const isSelected = filters.minRating === String(num);
+                  return (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => updateFilters({ minRating: isSelected ? '' : String(num), page: 1 })}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-sky-50 text-sky-600 font-bold border-l-2 border-sky-500'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 5 }, (_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-3.5 h-3.5 ${
+                              i < num ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span>& Above</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
           </aside>
 
           {/* Catalog items results grid */}
@@ -386,10 +434,11 @@ export const Home = () => {
                   value={filters.sort}
                   onChange={handleSortChange}
                 >
-                  <option value="newest">Newest Arrivals</option>
+                  <option value="newest">Newest First</option>
                   <option value="priceAsc">Price: Low to High</option>
                   <option value="priceDesc">Price: High to Low</option>
-                  <option value="rating">Top Customer Rated</option>
+                  <option value="rating">Best Rated</option>
+                  <option value="mostPopular">Most Popular</option>
                 </select>
               </div>
             </div>

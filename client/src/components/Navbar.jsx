@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
@@ -13,11 +13,39 @@ export const Navbar = () => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
+  // Suggestions dropdown states
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Search input typing debounce effect
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchInput.trim().length >= 2) {
+        try {
+          const response = await API.get('/products', {
+            params: { keyword: searchInput.trim(), limit: 5 }
+          });
+          setSuggestions(response.data.data || []);
+          setShowSuggestions(true);
+        } catch (err) {
+          console.error('Failed to load suggestions:', err.message);
+          setSuggestions([]);
+        }
+      } else {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchInput]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    setShowSuggestions(false);
     updateFilters({ keyword: searchInput });
     navigate('/');
   };
@@ -40,7 +68,7 @@ export const Navbar = () => {
           
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="flex items-center gap-2 group">
+            <Link to="/" className="flex items-center gap-2 group text-decoration-none">
               <div className="bg-gradient-to-tr from-sky-500 to-blue-600 p-2 rounded-xl text-white shadow-md shadow-sky-100 group-hover:scale-105 transition-transform duration-200">
                 <ShoppingBag className="w-5 h-5" />
               </div>
@@ -50,19 +78,71 @@ export const Navbar = () => {
             </Link>
           </div>
 
-          {/* Search Bar */}
+          {/* Search Bar & Auto-Complete suggestions list */}
           {!isAuthPage && (
-            <form onSubmit={handleSearchSubmit} className="hidden md:flex flex-1 max-w-md relative items-center">
-              <input
-                type="text"
-                placeholder="Search products, brands, categories..."
-                className="w-full px-4 py-2 pl-10 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-50 bg-slate-50 hover:bg-slate-100/50 transition-colors placeholder:text-slate-400"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
-              <button type="submit" className="hidden"></button>
-            </form>
+            <div className="hidden md:flex flex-1 max-w-md relative flex-col">
+              <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
+                <input
+                  type="text"
+                  placeholder="Search products, brands, categories..."
+                  className="w-full px-4 py-2 pl-10 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-50 bg-slate-50 hover:bg-slate-100/50 transition-colors placeholder:text-slate-400"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onFocus={() => searchInput.trim().length >= 2 && setShowSuggestions(true)}
+                />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 pointer-events-none" />
+                <button type="submit" className="hidden"></button>
+              </form>
+
+              {/* Suggestions dropdown overlay */}
+              {showSuggestions && suggestions.length > 0 && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowSuggestions(false)}></div>
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200/60 rounded-2xl shadow-xl z-25 py-2 divide-y divide-slate-50 transition-all">
+                    {suggestions.map((prod) => {
+                      const activePrice = prod.discountPrice > 0 ? prod.discountPrice : prod.price;
+                      return (
+                        <div
+                          key={prod._id}
+                          onClick={() => {
+                            setShowSuggestions(false);
+                            setSearchInput('');
+                            navigate(`/products/${prod._id}`);
+                          }}
+                          className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors"
+                        >
+                          <img
+                            src={prod.images[0]}
+                            alt={prod.name}
+                            className="w-9 h-9 object-cover rounded-lg border border-slate-100 flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="text-xs font-bold text-slate-800 truncate leading-tight">
+                                {prod.name}
+                              </h4>
+                              <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded uppercase flex-shrink-0">
+                                {prod.brand}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-[10px] font-extrabold text-sky-600">
+                                ₹{activePrice.toLocaleString('en-IN')}
+                              </span>
+                              {prod.discountPrice > 0 && (
+                                <span className="text-[9px] font-semibold text-slate-400 line-through">
+                                  ₹{prod.price.toLocaleString('en-IN')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
           )}
 
           {/* Right Navigation Controls */}

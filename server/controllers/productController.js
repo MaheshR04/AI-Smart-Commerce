@@ -14,6 +14,8 @@ export const getProducts = async (req, res, next) => {
       brand,
       minPrice,
       maxPrice,
+      minRating,
+      inStock,
       sort,
       page = 1,
       limit = 12,
@@ -47,16 +49,28 @@ export const getProducts = async (req, res, next) => {
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
 
+    // Rating filter
+    if (minRating) {
+      query.rating = { $gte: Number(minRating) };
+    }
+
+    // Availability filter
+    if (inStock === 'true') {
+      query.stock = { $gt: 0 };
+    }
+
     // Determine Sort options
     let sortOptions = {};
     if (sort === 'priceAsc') {
       sortOptions = { price: 1 };
     } else if (sort === 'priceDesc') {
       sortOptions = { price: -1 };
-    } else if (sort === 'rating') {
+    } else if (sort === 'rating' || sort === 'bestRated') {
       sortOptions = { rating: -1 };
+    } else if (sort === 'mostPopular') {
+      sortOptions = { rating: -1, createdAt: -1 };
     } else {
-      sortOptions = { createdAt: -1 }; // default: newest
+      sortOptions = { createdAt: -1 }; // default: newest first
     }
 
     // Pagination calculations
