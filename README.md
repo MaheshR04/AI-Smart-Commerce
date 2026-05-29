@@ -77,7 +77,7 @@ The codebase is structured to serve as a robust, scalable foundation, preparing 
 ## 🛠 Tech Stack
 
 - **Frontend**: React (Vite), Tailwind CSS, React Router DOM, Axios, Context API, Lucide Icons
-- **Backend**: Node.js, Express.js
+- **Backend**: Node.js, Express.js, Nodemailer (Notification Engine)
 - **Database**: MongoDB Atlas, Mongoose
 - **Image Cloud Storage**: Cloudinary SDK
 - **Payment Processing**: Razorpay Gateway Integration
@@ -94,12 +94,14 @@ AI-Smart-Commerce/
 │   ├── middleware/                # Protect routers, admin checks, and file uploads
 │   ├── models/                    # MongoDB schemas
 │   ├── routes/                    # API routes
+│   ├── services/                  # Email notification services (Nodemailer template engine)
+│   ├── sent_emails/               # Local workspace sent-emails sandbox (HTML file outputs)
 │   ├── seed.js                    # Mock database seeder
 │   └── server.js                  # Main server entrypoint
 │
 └── client/                        # React SPA (Vite + Tailwind)
     ├── src/
-    │   ├── components/            # Headers, Footers, ProductCards, ReviewForms
+    │   ├── components/            # Headers, Footers, ProductCards, ReviewSections
     │   ├── context/               # State providers (Auth, Shop, Cart)
     │   ├── pages/                 # Home, Detail Sheets, Carts, Orders, Admins
     │   ├── routes/                # Router mapping (AppRoutes.jsx)
@@ -126,6 +128,12 @@ RAZORPAY_KEY_ID=your_razorpay_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 FRONTEND_URL=http://localhost:5173
 NODE_ENV=development
+
+# SMTP Email Configuration (Optional - Falls back to local HTML sent_emails sandbox if blank)
+SMTP_HOST=smtp.mailtrap.io
+SMTP_PORT=2525
+SMTP_USER=your_smtp_username
+SMTP_PASS=your_smtp_password
 ```
 
 ### 2. Client Configuration
