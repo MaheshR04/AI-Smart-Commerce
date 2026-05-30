@@ -9,7 +9,7 @@ import API from '../services/api';
 export const Navbar = () => {
   const { user, logout, isAdmin } = useContext(AuthContext);
   const { getCartCount } = useContext(CartContext);
-  const { wishlist, filters, updateFilters } = useContext(ShopContext);
+  const { wishlist, filters, updateFilters, resetFilters } = useContext(ShopContext);
   const [searchInput, setSearchInput] = useState(filters.keyword || '');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -85,7 +85,11 @@ export const Navbar = () => {
           
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="flex items-center gap-2 group text-decoration-none">
+            <Link
+              to="/"
+              onClick={() => resetFilters && resetFilters()}
+              className="flex items-center gap-2 group text-decoration-none"
+            >
               <div className="bg-gradient-to-tr from-sky-500 to-blue-600 p-2 rounded-xl text-white shadow-md shadow-sky-100 dark:shadow-none group-hover:scale-105 transition-transform duration-200">
                 <ShoppingBag className="w-5 h-5" />
               </div>
@@ -165,6 +169,16 @@ export const Navbar = () => {
           {/* Right Navigation Controls */}
           {!isAuthPage && (
             <nav className="hidden md:flex items-center gap-3">
+              {/* Home option */}
+              <Link
+                to="/"
+                onClick={() => resetFilters && resetFilters()}
+                className="px-3 py-2 text-slate-600 dark:text-slate-350 hover:text-sky-600 dark:hover:text-sky-400 text-xs font-bold transition-all cursor-pointer"
+                title="Home Feed"
+              >
+                Home
+              </Link>
+
               {/* Theme Toggler */}
               <button
                 onClick={toggleTheme}
@@ -341,9 +355,12 @@ export const Navbar = () => {
             <Link
               to="/"
               className="px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={() => {
+                resetFilters && resetFilters();
+                setMobileMenuOpen(false);
+              }}
             >
-              Home / Products
+              Home
             </Link>
 
             <Link

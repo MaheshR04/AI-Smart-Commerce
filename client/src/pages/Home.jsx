@@ -287,7 +287,18 @@ export const Home = () => {
         </div>
       ) : (
         /* RENDER OPTION B: Filterable search catalog directory grid */
-        <div className="flex flex-col lg:flex-row gap-8 items-start animate-fade-in">
+        <div className="space-y-6 w-full animate-fade-in">
+          
+          {/* Back button */}
+          <button
+            onClick={resetFilters}
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 px-4 py-2.5 rounded-xl shadow-sm cursor-pointer active:scale-95 animate-fade-in"
+          >
+            <ChevronLeft className="w-4 h-4 text-sky-500" />
+            Back to Home Feed
+          </button>
+
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
           
           {/* Sidebar Filters */}
           <aside className="w-full lg:w-64 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-sm space-y-6 flex-shrink-0 lg:sticky lg:top-20">
@@ -515,6 +526,7 @@ export const Home = () => {
           </div>
 
         </div>
+      </div>
       )}
 
     </div>
