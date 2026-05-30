@@ -176,6 +176,25 @@ export const ProductDetails = () => {
     }
   };
 
+  const handleBuyNow = async () => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    if (stock < 1) return;
+
+    setAddingToCart(true);
+    try {
+      await addToCart(id, quantity);
+      navigate('/checkout');
+    } catch (error) {
+      console.error(error.message);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
   const renderStars = (ratingVal) => {
     const stars = [];
     const floorRating = Math.floor(ratingVal || 0);
@@ -212,6 +231,20 @@ export const ProductDetails = () => {
           <div className="aspect-square bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-sm relative group">
             <img src={activeImage} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             
+            {/* Floating Wishlist Heart */}
+            <button
+              disabled={wishlistLoading}
+              onClick={handleWishlistClick}
+              className={`absolute top-4 right-4 z-10 p-3 rounded-full border shadow-sm transition-all duration-200 active:scale-90 hover:scale-105 cursor-pointer focus:outline-none ${
+                isProductInWishlist
+                  ? 'border-rose-100 bg-rose-500 text-white hover:bg-rose-600 shadow-rose-100'
+                  : 'border-slate-100 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 text-slate-400 dark:text-slate-500 hover:text-rose-500 backdrop-blur-md animate-fade-in'
+              }`}
+              title={isProductInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+            >
+              <Heart className={`w-5 h-5 ${isProductInWishlist ? 'fill-current' : ''}`} />
+            </button>
+
             {discountPrice > 0 && (
               <span className="absolute top-4 left-4 z-10 px-2.5 py-1 text-xs font-bold text-white bg-rose-500 rounded-lg shadow-sm">
                 {savingPercent}% OFF
@@ -334,23 +367,19 @@ export const ProductDetails = () => {
                 <button
                   onClick={handleAddToCart}
                   disabled={addingToCart}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white rounded-xl font-bold shadow-md shadow-sky-100 active:scale-95 disabled:opacity-50 transition-all duration-200 cursor-pointer"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl font-bold shadow-sm active:scale-95 disabled:opacity-50 transition-all duration-200 cursor-pointer"
                 >
                   <ShoppingCart className="w-4 h-4" />
                   {addingToCart ? 'Adding to Cart...' : 'Add to Cart'}
                 </button>
 
                 <button
-                  disabled={wishlistLoading}
-                  onClick={handleWishlistClick}
-                  className={`px-6 py-3 border rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-200 active:scale-95 cursor-pointer ${
-                    isProductInWishlist
-                      ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
-                  }`}
+                  onClick={handleBuyNow}
+                  disabled={addingToCart}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white rounded-xl font-bold shadow-md shadow-sky-100 active:scale-95 disabled:opacity-50 transition-all duration-200 cursor-pointer"
                 >
-                  <Heart className={`w-4 h-4 ${isProductInWishlist ? 'fill-current' : ''}`} />
-                  {isProductInWishlist ? 'Wishlisted' : 'Save to Wishlist'}
+                  <Sparkles className="w-4 h-4" />
+                  Buy Now
                 </button>
               </div>
             </div>
