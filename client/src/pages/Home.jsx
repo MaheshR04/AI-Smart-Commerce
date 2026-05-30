@@ -290,16 +290,16 @@ export const Home = () => {
         <div className="flex flex-col lg:flex-row gap-8 items-start animate-fade-in">
           
           {/* Sidebar Filters */}
-          <aside className="w-full lg:w-64 bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm space-y-6 flex-shrink-0 lg:sticky lg:top-20">
+          <aside className="w-full lg:w-64 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-5 shadow-sm space-y-6 flex-shrink-0 lg:sticky lg:top-20">
             
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-1.5">
                 <Filter className="w-4 h-4 text-sky-500" />
                 Filter Catalog
               </h3>
               <button
                 onClick={resetFilters}
-                className="text-[10px] font-semibold text-sky-600 hover:text-sky-700 flex items-center gap-1 cursor-pointer"
+                className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 cursor-pointer"
               >
                 <RefreshCw className="w-2.5 h-2.5" />
                 Reset All
@@ -308,14 +308,14 @@ export const Home = () => {
 
             {/* Pricing bounds form */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Price Range (₹)</h4>
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Price Range (₹)</h4>
               <form onSubmit={handlePriceFilterSubmit} className="space-y-2">
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
                     name="minPrice"
                     placeholder="Min"
-                    className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-sky-500"
+                    className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     defaultValue={filters.minPrice}
                   />
                   <span className="text-slate-400 text-xs">to</span>
@@ -323,13 +323,13 @@ export const Home = () => {
                     type="number"
                     name="maxPrice"
                     placeholder="Max"
-                    className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-sky-500"
+                    className="w-full px-2 py-1.5 text-xs bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
                     defaultValue={filters.maxPrice}
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition-colors"
+                  className="w-full py-1.5 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-650 text-white rounded-lg text-xs font-semibold transition-colors"
                 >
                   Apply Range
                 </button>
@@ -338,7 +338,7 @@ export const Home = () => {
 
             {/* Brand select filter */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Select Brand</h4>
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Select Brand</h4>
               <div className="flex flex-col gap-1.5">
                 {brandsList.map((brand) => {
                   const isSelected = filters.brand === brand;
@@ -348,8 +348,8 @@ export const Home = () => {
                       onClick={() => updateFilters({ brand: isSelected ? '' : brand, page: 1 })}
                       className={`px-3 py-1.5 rounded-lg text-xs text-left transition-colors font-medium cursor-pointer ${
                         isSelected
-                          ? 'bg-sky-50 text-sky-600 font-bold border-l-2 border-sky-500'
-                          : 'text-slate-600 hover:bg-slate-50'
+                          ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 font-bold border-l-2 border-sky-500'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                       }`}
                     >
                       {brand}
@@ -360,22 +360,22 @@ export const Home = () => {
             </div>
 
             {/* Availability Filter */}
-            <div className="space-y-2.5 pt-4 border-t border-slate-100">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Availability</h4>
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+            <div className="space-y-2.5 pt-4 border-t border-slate-100 dark:border-slate-700">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Availability</h4>
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={filters.inStock}
                   onChange={(e) => updateFilters({ inStock: e.target.checked, page: 1 })}
-                  className="rounded text-sky-500 focus:ring-sky-400 h-4 w-4 border-slate-300"
+                  className="rounded text-sky-500 focus:ring-sky-400 h-4 w-4 border-slate-300 dark:border-slate-600 dark:bg-slate-900"
                 />
                 In Stock Only
               </label>
             </div>
 
             {/* Rating Filter */}
-            <div className="space-y-3 pt-4 border-t border-slate-100">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Customer Rating</h4>
+            <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Customer Rating</h4>
               <div className="flex flex-col gap-1.5">
                 {[4, 3, 2].map((num) => {
                   const isSelected = filters.minRating === String(num);
@@ -386,8 +386,8 @@ export const Home = () => {
                       onClick={() => updateFilters({ minRating: isSelected ? '' : String(num), page: 1 })}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-left transition-colors cursor-pointer ${
                         isSelected
-                          ? 'bg-sky-50 text-sky-600 font-bold border-l-2 border-sky-500'
-                          : 'text-slate-600 hover:bg-slate-50'
+                          ? 'bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 font-bold border-l-2 border-sky-500'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
                       }`}
                     >
                       <div className="flex gap-0.5">
@@ -395,7 +395,7 @@ export const Home = () => {
                           <Star
                             key={i}
                             className={`w-3.5 h-3.5 ${
-                              i < num ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+                              i < num ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-slate-750'
                             }`}
                           />
                         ))}
@@ -413,10 +413,10 @@ export const Home = () => {
           <div className="flex-1 w-full space-y-6">
             
             {/* Top catalog sorting and summary header */}
-            <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-slate-500 text-xs text-center sm:text-left">
-                Showing <span className="font-bold text-slate-800">{products.length}</span> of{' '}
-                <span className="font-bold text-slate-800">{paginationInfo.total}</span> products{' '}
+            <div className="bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-slate-500 dark:text-slate-400 text-xs text-center sm:text-left">
+                Showing <span className="font-bold text-slate-800 dark:text-slate-200">{products.length}</span> of{' '}
+                <span className="font-bold text-slate-800 dark:text-slate-200">{paginationInfo.total}</span> products{' '}
                 {filters.keyword && (
                   <>
                     for "<span className="font-bold text-sky-600">{filters.keyword}</span>"
@@ -431,7 +431,7 @@ export const Home = () => {
                   Sort By:
                 </label>
                 <select
-                  className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-xl focus:outline-none bg-slate-50 font-semibold text-slate-700"
+                  className="px-2.5 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none bg-slate-50 dark:bg-slate-900 font-semibold text-slate-700 dark:text-slate-300"
                   value={filters.sort}
                   onChange={handleSortChange}
                 >
