@@ -105,7 +105,7 @@ const products = [
     discountPrice: 19999,
     stock: 10,
     images: [
-      'https://images.unsplash.com/photo-1517256064527-09c53b2d0bc6?auto=format&fit=crop&q=80&w=800'
+      'https://images.unsplash.com/photo-1513530534585-c7b1394c6d51?auto=format&fit=crop&q=80&w=800'
     ],
     rating: 4.8,
     specifications: [
