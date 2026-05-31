@@ -134,6 +134,101 @@ const products = [
       { key: 'Format', value: 'Paperback' }
     ],
   },
+  {
+    name: 'Organics Hydrating Face Serum',
+    brand: 'Lumiere',
+    category: 'Beauty',
+    description: 'Revitalize your skin with our premium organic hydrating face serum, enriched with Hyaluronic Acid, Vitamin C, and natural green tea extracts.',
+    price: 1499,
+    discountPrice: 1199,
+    stock: 50,
+    images: [
+      'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?auto=format&fit=crop&q=80&w=800'
+    ],
+    rating: 4.7,
+    specifications: [
+      { key: 'Skin Type', value: 'All Skin Types' },
+      { key: 'Ingredients', value: 'Hyaluronic Acid, Vitamin C, Vitamin E' },
+      { key: 'Volume', value: '50 ml' },
+      { key: 'Organic', value: 'Yes (100% Vegan)' }
+    ],
+  },
+  {
+    name: 'Classic Leather Chelsea Boots',
+    brand: 'ThreadCraft',
+    category: 'Fashion',
+    description: 'Step out in confidence. Crafted from 100% genuine full-grain leather, featuring comfortable elastic side panels and durable anti-skid rubber soles.',
+    price: 5999,
+    discountPrice: 4499,
+    stock: 20,
+    rating: 4.4,
+    images: [
+      'https://images.unsplash.com/photo-1638247025967-b4e38f787b76?auto=format&fit=crop&q=80&w=800'
+    ],
+    specifications: [
+      { key: 'Material', value: 'Full-Grain Leather' },
+      { key: 'Sole', value: 'Anti-Skid Rubber' },
+      { key: 'Closure', value: 'Slip-On' },
+      { key: 'Style', value: 'Chelsea Boot' }
+    ],
+  },
+  {
+    name: 'Ultra-Wide Gaming Monitor 34"',
+    brand: 'AuraTech',
+    category: 'Electronics',
+    description: 'Dominate your games with a 34-inch curved WQHD display, offering an ultra-fast 144Hz refresh rate, 1ms response time, and HDR400 support.',
+    price: 34999,
+    discountPrice: 29999,
+    stock: 15,
+    rating: 4.8,
+    images: [
+      'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=800'
+    ],
+    specifications: [
+      { key: 'Screen Size', value: '34 Inches (Curved)' },
+      { key: 'Refresh Rate', value: '144Hz' },
+      { key: 'Resolution', value: '3440 x 1440 (WQHD)' },
+      { key: 'Response Time', value: '1ms' }
+    ],
+  },
+  {
+    name: 'Smart Air Purifier HEPA H13',
+    brand: 'Lumiere',
+    category: 'Home & Kitchen',
+    description: 'Breathe clean air. Advanced HEPA H13 filtration capturing 99.97% of airborne particles, dust, pollen, and pet dander with real-time air quality monitors.',
+    price: 12999,
+    discountPrice: 9999,
+    stock: 30,
+    rating: 4.6,
+    images: [
+      'https://images.unsplash.com/photo-1585130401366-fe05a8d813c4?auto=format&fit=crop&q=80&w=800'
+    ],
+    specifications: [
+      { key: 'Filter Type', value: 'True HEPA H13' },
+      { key: 'Coverage Area', value: 'Up to 500 sq. ft.' },
+      { key: 'Noise Level', value: '22dB (Sleep Mode)' },
+      { key: 'Smart App Control', value: 'Yes (WiFi Enabled)' }
+    ],
+  },
+  {
+    name: 'Thinking, Fast and Slow (Paperback)',
+    brand: 'Penguin Publishing',
+    category: 'Books',
+    description: 'The legendary Nobel Prize winner Daniel Kahneman takes us on a groundbreaking tour of the mind and explains the two systems that drive the way we think.',
+    price: 999,
+    discountPrice: 699,
+    stock: 60,
+    rating: 4.7,
+    images: [
+      'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=800'
+    ],
+    specifications: [
+      { key: 'Author', value: 'Daniel Kahneman' },
+      { key: 'Publisher', value: 'Penguin Books' },
+      { key: 'Language', value: 'English' },
+      { key: 'Format', value: 'Paperback' }
+    ],
+  },
 ];
 
 const seedDatabase = async () => {
