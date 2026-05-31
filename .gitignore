@@ -34,5 +34,6 @@ lerna-debug.log*
 *.sln
 *.sw?
 
-# Server Uploads & Temp Files
+# Server Uploads, Emails & Temp Files
 server/uploads/
+server/sent_emails/
