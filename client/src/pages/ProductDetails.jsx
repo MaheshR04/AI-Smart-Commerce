@@ -5,7 +5,8 @@ import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import ReviewSection from '../components/ReviewSection';
 import ProductCard from '../components/ProductCard';
-import { Heart, ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronLeft, Eye, Sparkles } from 'lucide-react';
+import { Heart, ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronLeft, Eye, Sparkles, Share2 } from 'lucide-react';
+import { ToastContext } from '../context/ToastContext';
 import API from '../services/api';
 
 export const ProductDetails = () => {
@@ -13,6 +14,7 @@ export const ProductDetails = () => {
   const { toggleWishlist, isInWishlist, products } = useContext(ShopContext);
   const { addToCart } = useContext(CartContext);
   const { token } = useContext(AuthContext);
+  const { addToast } = useContext(ToastContext);
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -195,6 +197,15 @@ export const ProductDetails = () => {
     }
   };
 
+  const handleShareClick = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      addToast('Product link copied to clipboard.', 'success');
+    } catch (err) {
+      addToast('Failed to copy product link.', 'error');
+    }
+  };
+
   const renderStars = (ratingVal) => {
     const stars = [];
     const floorRating = Math.floor(ratingVal || 0);
@@ -243,6 +254,15 @@ export const ProductDetails = () => {
               title={isProductInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
             >
               <Heart className={`w-5 h-5 ${isProductInWishlist ? 'fill-current' : ''}`} />
+            </button>
+
+            {/* Floating Share Button */}
+            <button
+              onClick={handleShareClick}
+              className="absolute top-18 right-4 z-10 p-3 rounded-full border border-slate-100 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 shadow-sm transition-all duration-200 active:scale-90 hover:scale-105 cursor-pointer focus:outline-none backdrop-blur-md animate-fade-in"
+              title="Share Product"
+            >
+              <Share2 className="w-5 h-5" />
             </button>
 
             {discountPrice > 0 && (
