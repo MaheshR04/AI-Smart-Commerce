@@ -259,7 +259,7 @@ export const ProductDetails = () => {
             {/* Floating Share Button */}
             <button
               onClick={handleShareClick}
-              className="absolute top-18 right-4 z-10 p-3 rounded-full border border-slate-100 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 shadow-sm transition-all duration-200 active:scale-90 hover:scale-105 cursor-pointer focus:outline-none backdrop-blur-md animate-fade-in"
+              className="absolute top-20 right-4 z-10 p-3 rounded-full border border-slate-100 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 text-slate-400 dark:text-slate-500 hover:text-sky-600 dark:hover:text-sky-400 shadow-sm transition-all duration-200 active:scale-90 hover:scale-105 cursor-pointer focus:outline-none backdrop-blur-md animate-fade-in"
               title="Share Product"
             >
               <Share2 className="w-5 h-5" />
