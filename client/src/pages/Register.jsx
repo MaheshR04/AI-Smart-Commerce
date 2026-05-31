@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ToastContext } from '../context/ToastContext';
-import { ShoppingBag, Lock, Mail, User, ArrowRight } from 'lucide-react';
+import { ShoppingBag, Lock, Mail, User, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export const Register = () => {
   const { register, token, error: authError } = useContext(AuthContext);
@@ -11,6 +11,8 @@ export const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -98,7 +100,7 @@ export const Register = () => {
             <div className="relative flex items-center">
               <input
                 type="email"
-                placeholder="customer@example.com"
+                placeholder="Enter your email address"
                 className="input-field pl-10"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -111,13 +113,20 @@ export const Register = () => {
             <label className="text-xs font-semibold text-slate-600">Password</label>
             <div className="relative flex items-center">
               <input
-                type="password"
-                placeholder="At least 6 characters"
-                className="input-field pl-10"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter password (at least 6 characters)"
+                className="input-field pl-10 pr-10"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
               <Lock className="w-4 h-4 text-slate-400 absolute left-3" />
+              <button
+                type="button"
+                className="absolute right-3 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
@@ -125,13 +134,20 @@ export const Register = () => {
             <label className="text-xs font-semibold text-slate-600">Confirm Password</label>
             <div className="relative flex items-center">
               <input
-                type="password"
-                placeholder="Confirm password"
-                className="input-field pl-10"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Confirm your password"
+                className="input-field pl-10 pr-10"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
               <Lock className="w-4 h-4 text-slate-400 absolute left-3" />
+              <button
+                type="button"
+                className="absolute right-3 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
 
