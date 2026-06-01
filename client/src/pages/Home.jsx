@@ -20,22 +20,12 @@ export const Home = () => {
 
   // Extract unique brands for filtering
   const brandsList = [
-    'Apple',
-    'Samsung',
-    'OnePlus',
-    'Sony',
-    'Nike',
-    'Adidas',
-    'Levi\'s',
-    'Zara',
-    'Philips',
-    'Prestige',
-    'Dyson',
-    'Cetaphil',
-    'L\'Oreal',
-    'Titan Skinn',
-    'Penguin',
-    'HarperCollins'
+    'Apple', 'Samsung', 'OnePlus', 'Google', 'Sony', 'boAt', 'JBL', 'Anker',
+    'Logitech', 'Dell', 'HP', 'Lenovo', 'SanDisk', 'Levi\'s', 'Zara', 'H&M',
+    'Nike', 'Adidas', 'Puma', 'Bata', 'Fossil', 'Casio', 'Titan', 'Ray-Ban',
+    'American Tourister', 'Philips', 'Prestige', 'Milton', 'Borosil', 'IKEA',
+    'Dyson', 'Xiaomi', 'Penguin', 'O\'Reilly', 'Cetaphil', 'L\'Oreal',
+    'Mamaearth', 'Lakme', 'Maybelline', 'Gillette'
   ];
 
   const promoSlides = [
