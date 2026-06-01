@@ -13,6 +13,21 @@ export const Navbar = () => {
   const [searchInput, setSearchInput] = useState(filters.keyword || '');
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Scroll support for premium sticky transition
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 15) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
   // Theme support
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -79,9 +94,15 @@ export const Navbar = () => {
   const isAuthPage = ['/login', '/register'].includes(location.pathname);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/85 dark:border-slate-800/80 shadow-sm transition-colors duration-300">
+    <header className={`sticky top-0 z-50 transition-all duration-300 ${
+      isScrolled
+        ? 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50 shadow-[0_4px_20px_rgba(0,0,0,0.02)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.15)]'
+        : 'bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800/30 shadow-none'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className={`flex items-center justify-between gap-4 transition-all duration-300 ${
+          isScrolled ? 'h-13 sm:h-14' : 'h-16'
+        }`}>
           
           {/* Logo */}
           <div className="flex-shrink-0 flex items-center">

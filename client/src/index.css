@@ -11,7 +11,7 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col;
+    @apply bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col overflow-x-hidden;
   }
 
   /* Custom Premium Scrollbar */

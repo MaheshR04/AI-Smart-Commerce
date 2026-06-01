@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, ShoppingCart, Star } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
@@ -15,6 +15,12 @@ export const ProductCard = ({ product }) => {
   const navigate = useNavigate();
 
   const { _id, name, brand, price, discountPrice, stock, images, rating } = product;
+
+  const [imgSrc, setImgSrc] = useState(images && images[0] ? images[0] : '');
+
+  useEffect(() => {
+    setImgSrc(images && images[0] ? images[0] : '');
+  }, [images]);
 
   const isProductInWishlist = isInWishlist(_id);
   const discountPercent = discountPrice > 0 ? Math.round(((price - discountPrice) / price) * 100) : 0;
@@ -101,8 +107,9 @@ export const ProductCard = ({ product }) => {
           </span>
         )}
         <img
-          src={images[0]}
+          src={imgSrc || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=800'}
           alt={name}
+          onError={() => setImgSrc('https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=800')}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
           loading="lazy"
         />

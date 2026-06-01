@@ -357,7 +357,7 @@ export const Home = () => {
             {/* Brand select filter */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Select Brand</h4>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
                 {brandsList.map((brand) => {
                   const isSelected = filters.brand === brand;
                   return (
