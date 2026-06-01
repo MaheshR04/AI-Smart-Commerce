@@ -19,7 +19,24 @@ export const Home = () => {
   const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   // Extract unique brands for filtering
-  const brandsList = ['SonicSound', 'AuraTech', 'ThreadCraft', 'Cafeteria', 'Penguin Publishing'];
+  const brandsList = [
+    'Apple',
+    'Samsung',
+    'OnePlus',
+    'Sony',
+    'Nike',
+    'Adidas',
+    'Levi\'s',
+    'Zara',
+    'Philips',
+    'Prestige',
+    'Dyson',
+    'Cetaphil',
+    'L\'Oreal',
+    'Titan Skinn',
+    'Penguin',
+    'HarperCollins'
+  ];
 
   const promoSlides = [
     {
