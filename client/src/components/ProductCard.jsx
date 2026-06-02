@@ -22,9 +22,11 @@ export const ProductCard = ({ product }) => {
     setImgSrc(images && images[0] ? images[0] : '');
   }, [images]);
 
-  const isProductInWishlist = isInWishlist(_id);
-  const discountPercent = discountPrice > 0 ? Math.round(((price - discountPrice) / price) * 100) : 0;
-  const activePrice = discountPrice > 0 ? discountPrice : price;
+  const safePrice = typeof price === 'number' ? price : 0;
+  const safeDiscountPrice = typeof discountPrice === 'number' ? discountPrice : 0;
+  const isProductInWishlist = typeof isInWishlist === 'function' && _id ? isInWishlist(_id) : false;
+  const discountPercent = safeDiscountPrice > 0 && safePrice > 0 ? Math.round(((safePrice - safeDiscountPrice) / safePrice) * 100) : 0;
+  const activePrice = safeDiscountPrice > 0 ? safeDiscountPrice : safePrice;
 
   const handleWishlistClick = async (e) => {
     e.preventDefault();
@@ -141,13 +143,13 @@ export const ProductCard = ({ product }) => {
         {/* Pricing & Add to Cart action */}
         <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
           <div className="flex flex-col">
-            {discountPrice > 0 ? (
+            {safeDiscountPrice > 0 ? (
               <>
-                <span className="text-xs text-slate-400 dark:text-slate-500 line-through">₹{price.toLocaleString('en-IN')}</span>
-                <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">₹{discountPrice.toLocaleString('en-IN')}</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500 line-through">₹{safePrice.toLocaleString('en-IN')}</span>
+                <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">₹{safeDiscountPrice.toLocaleString('en-IN')}</span>
               </>
             ) : (
-              <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">₹{price.toLocaleString('en-IN')}</span>
+              <span className="text-base font-extrabold text-slate-900 dark:text-slate-100">₹{safePrice.toLocaleString('en-IN')}</span>
             )}
           </div>
 

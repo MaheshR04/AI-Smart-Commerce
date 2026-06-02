@@ -88,8 +88,8 @@ export const Navbar = () => {
     navigate('/login');
   };
 
-  const wishlistCount = wishlist?.products?.length || 0;
-  const cartCount = getCartCount();
+  const wishlistCount = Array.isArray(wishlist?.products) ? wishlist.products.filter(Boolean).length : 0;
+  const cartCount = typeof getCartCount === 'function' ? getCartCount() : 0;
 
   const isAuthPage = ['/login', '/register'].includes(location.pathname);
 
@@ -142,7 +142,11 @@ export const Navbar = () => {
                   <div className="fixed inset-0 z-10" onClick={() => setShowSuggestions(false)}></div>
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl shadow-xl z-25 py-2 divide-y divide-slate-50 dark:divide-slate-700 transition-all">
                     {suggestions.map((prod) => {
-                      const activePrice = prod.discountPrice > 0 ? prod.discountPrice : prod.price;
+                      if (!prod) return null;
+                      const safeProdPrice = typeof prod.price === 'number' ? prod.price : 0;
+                      const safeProdDiscountPrice = typeof prod.discountPrice === 'number' ? prod.discountPrice : 0;
+                      const safeActivePrice = safeProdDiscountPrice > 0 ? safeProdDiscountPrice : safeProdPrice;
+                      const imgSrc = prod.images && prod.images[0] ? prod.images[0] : '';
                       return (
                         <div
                           key={prod._id}
@@ -154,7 +158,7 @@ export const Navbar = () => {
                           className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors"
                         >
                           <img
-                            src={prod.images[0]}
+                            src={imgSrc || 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&q=80&w=800'}
                             alt={prod.name}
                             className="w-9 h-9 object-cover rounded-lg border border-slate-100 dark:border-slate-750 flex-shrink-0"
                           />
@@ -169,11 +173,11 @@ export const Navbar = () => {
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-[10px] font-extrabold text-sky-600 dark:text-sky-400">
-                                ₹{activePrice.toLocaleString('en-IN')}
+                                ₹{safeActivePrice.toLocaleString('en-IN')}
                               </span>
-                              {prod.discountPrice > 0 && (
+                              {safeProdDiscountPrice > 0 && (
                                 <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 line-through">
-                                  ₹{prod.price.toLocaleString('en-IN')}
+                                  ₹{safeProdPrice.toLocaleString('en-IN')}
                                 </span>
                               )}
                             </div>

@@ -22,7 +22,7 @@ export const ShopProvider = ({ children }) => {
     inStock: false,
     sort: 'newest',
     page: 1,
-    limit: 12,
+    limit: 24,
   });
   const [paginationInfo, setPaginationInfo] = useState({
     total: 0,
@@ -108,9 +108,10 @@ export const ShopProvider = ({ children }) => {
 
   // Check if product is in wishlist
   const isInWishlist = (productId) => {
-    if (!wishlist || !wishlist.products) return false;
+    if (!productId || !wishlist || !wishlist.products) return false;
     return wishlist.products.some((item) => {
-      const itemId = item._id || item;
+      const itemId = item ? (item._id || item) : null;
+      if (!itemId) return false;
       return itemId.toString() === productId.toString();
     });
   };
@@ -144,7 +145,7 @@ export const ShopProvider = ({ children }) => {
       inStock: false,
       sort: 'newest',
       page: 1,
-      limit: 12,
+      limit: 24,
     });
   };
 

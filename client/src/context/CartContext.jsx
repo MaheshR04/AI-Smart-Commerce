@@ -93,16 +93,19 @@ export const CartProvider = ({ children }) => {
 
   // Calculated utilities
   const getCartCount = () => {
-    if (!cart || !cart.products) return 0;
-    return cart.products.reduce((acc, item) => acc + item.quantity, 0);
+    if (!cart || !Array.isArray(cart.products)) return 0;
+    return cart.products.reduce((acc, item) => acc + (item && typeof item.quantity === 'number' ? item.quantity : 0), 0);
   };
 
   const getCartTotal = () => {
-    if (!cart || !cart.products) return 0;
+    if (!cart || !Array.isArray(cart.products)) return 0;
     return cart.products.reduce((acc, item) => {
-      if (!item.productId) return acc;
-      const price = item.productId.discountPrice > 0 ? item.productId.discountPrice : item.productId.price;
-      return acc + price * item.quantity;
+      if (!item || !item.productId) return acc;
+      const price = typeof item.productId.discountPrice === 'number' && item.productId.discountPrice > 0 
+        ? item.productId.discountPrice 
+        : (typeof item.productId.price === 'number' ? item.productId.price : 0);
+      const qty = typeof item.quantity === 'number' ? item.quantity : 0;
+      return acc + price * qty;
     }, 0);
   };
 
