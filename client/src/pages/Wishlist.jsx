@@ -18,9 +18,9 @@ export const Wishlist = () => {
     }
   };
 
-  const handleAddToCart = async (productId) => {
+  const handleAddToCart = async (productId, productDetails) => {
     try {
-      await addToCart(productId, 1);
+      await addToCart(productId, 1, productDetails);
       // Remove from wishlist upon adding to cart
       await toggleWishlist(productId);
     } catch (error) {
@@ -88,7 +88,7 @@ export const Wishlist = () => {
 
                   {/* Quick Cart trigger */}
                   <button
-                    onClick={() => handleAddToCart(_id)}
+                    onClick={() => handleAddToCart(_id, item)}
                     disabled={stock === 0}
                     className="w-full flex items-center justify-center gap-2 py-2 bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white rounded-xl text-xs font-bold transition-all border border-sky-100 disabled:opacity-50 active:scale-95 duration-200"
                   >

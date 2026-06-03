@@ -60,7 +60,7 @@ export const ProductCard = ({ product }) => {
 
     setAddingToCart(true);
     try {
-      await addToCart(_id, 1);
+      await addToCart(_id, 1, product);
     } catch (error) {
       console.error(error.message);
     } finally {

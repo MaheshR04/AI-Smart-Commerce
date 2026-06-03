@@ -86,12 +86,29 @@ export const ShopProvider = ({ children }) => {
       addToast('Please log in to manage your wishlist.', 'error');
       throw new Error('Please log in to add items to your wishlist.');
     }
+
+    const previousWishlist = { ...wishlist };
+    const isIn = wishlist.products.some(
+      (item) => item && (item._id || item).toString() === productId.toString()
+    );
+
+    let updatedProducts;
+    if (isIn) {
+      updatedProducts = wishlist.products.filter(
+        (item) => item && (item._id || item).toString() !== productId.toString()
+      );
+    } else {
+      const productDetail = products.find(p => p && p._id && p._id.toString() === productId.toString()) || { _id: productId };
+      updatedProducts = [...wishlist.products, productDetail];
+    }
+    setWishlist({ ...wishlist, products: updatedProducts });
+
     try {
       const response = await API.post('/wishlist/toggle', { productId });
       setWishlist(response.data.data);
       
       const isAdded = response.data.data.products.some(
-        (item) => (item._id || item).toString() === productId.toString()
+        (item) => item && (item._id || item).toString() === productId.toString()
       );
       if (isAdded) {
         addToast('Product added to wishlist.', 'success');
@@ -100,6 +117,7 @@ export const ShopProvider = ({ children }) => {
       }
       return response.data;
     } catch (error) {
+      setWishlist(previousWishlist);
       const errMsg = error.response?.data?.message || 'Wishlist operation failed';
       addToast(errMsg, 'error');
       throw new Error(errMsg);

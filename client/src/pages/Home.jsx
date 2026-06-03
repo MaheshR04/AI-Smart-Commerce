@@ -46,6 +46,57 @@ export const Home = () => {
   const dealsScrollRef = useRef(null);
   const safeRecentlyViewed = Array.isArray(recentlyViewed) ? recentlyViewed.filter(Boolean) : [];
 
+  const [aiChat, setAiChat] = useState([
+    { sender: 'ai', text: `Hi ${user ? user.name.split(' ')[0] : 'there'}! I'm your AI Shopping Copilot. What can I find for you today?` }
+  ]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleAiPrompt = async (promptText) => {
+    if (!promptText.trim()) return;
+    
+    setAiChat(prev => [...prev, { sender: 'user', text: promptText }]);
+    setAiLoading(true);
+
+    setTimeout(() => {
+      let replyText = "";
+      const lower = promptText.toLowerCase();
+
+      if (lower.includes('tech') || lower.includes('electronics') || lower.includes('gadgets')) {
+        replyText = "Sure thing! I've filtered the store catalog for our premium Electronics. Check out the tech deals below!";
+        updateFilters({ category: 'Electronics', page: 1 });
+      } else if (lower.includes('style') || lower.includes('fashion') || lower.includes('apparel') || lower.includes('clothing')) {
+        replyText = "Got it. I've set the filters to show the latest Modern Style & Apparel collections. Take a look at the apparel products!";
+        updateFilters({ category: 'Fashion', page: 1 });
+      } else if (lower.includes('1500') || lower.includes('under') || lower.includes('cheap') || lower.includes('budget')) {
+        replyText = "No problem! I've filtered the list to display products under ₹1,500 to match your budget.";
+        updateFilters({ maxPrice: '1500', page: 1 });
+      } else if (lower.includes('track') || lower.includes('order')) {
+        replyText = "You can view and track your shipments directly on your My Orders page. Let me redirect you there!";
+        setTimeout(() => {
+          navigate('/orders');
+        }, 1500);
+      } else if (lower.includes('clear') || lower.includes('reset') || lower.includes('home')) {
+        replyText = "I've reset the filters for you! Enjoy browsing the default homepage feed.";
+        resetFilters();
+      } else {
+        replyText = `Searching catalog for "${promptText}". I've updated the search query filters for you.`;
+        updateFilters({ keyword: promptText, page: 1 });
+      }
+
+      setAiChat(prev => [...prev, { sender: 'ai', text: replyText }]);
+      setAiLoading(false);
+    }, 800);
+  };
+
+  const handleAiSubmit = (e) => {
+    e.preventDefault();
+    if (!aiInput.trim()) return;
+    const text = aiInput;
+    setAiInput('');
+    handleAiPrompt(text);
+  };
+
   // Extract unique brands for filtering
   const brandsList = [
     'Apple', 'Samsung', 'OnePlus', 'Google', 'Sony', 'boAt', 'JBL', 'Anker',
@@ -450,114 +501,105 @@ export const Home = () => {
                 </button>
               </div>
 
-              {/* Card 4: Personalized Action Hub / Login Teaser */}
-              {user ? (
-                <div className="bg-gradient-to-b from-sky-50 to-white dark:from-slate-800 dark:to-slate-850 border border-slate-200/60 dark:border-slate-700/60 rounded-3xl p-5 shadow-lg flex flex-col justify-between hover:shadow-xl transition-all duration-300">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      {user.profileImage ? (
-                        <img
-                          src={user.profileImage}
-                          alt={user.name || 'User'}
-                          className="w-11 h-11 rounded-full object-cover border border-sky-200 dark:border-slate-700 shadow-sm"
-                        />
-                      ) : (
-                        <div className="w-11 h-11 bg-sky-500 text-white rounded-full flex items-center justify-center text-base font-extrabold shadow-md">
-                          {getUserInitial()}
-                        </div>
-                      )}
-                      <div>
-                        <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none">Welcome Back</p>
-                        <h4 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate mt-1">
-                          {getUserFirstName()}
-                        </h4>
+              {/* Card 4: AI Shopping Copilot Widget */}
+              <div className="bg-gradient-to-b from-slate-900 to-indigo-950 dark:from-slate-900 dark:to-slate-950 border border-indigo-500/20 rounded-3xl p-5 shadow-lg flex flex-col justify-between hover:shadow-xl transition-all duration-300 relative overflow-hidden h-[380px] text-white">
+                {/* Background glow effects */}
+                <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-3 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex items-center justify-center">
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping absolute"></span>
+                      <span className="w-2 h-2 bg-emerald-500 rounded-full relative"></span>
+                    </div>
+                    <span className="text-[10px] font-extrabold tracking-wider uppercase bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">AI Shopping Copilot</span>
+                  </div>
+                  {aiChat.length > 1 && (
+                    <button
+                      onClick={() => setAiChat([{ sender: 'ai', text: `Hi ${user ? user.name.split(' ')[0] : 'there'}! I'm your AI Shopping Copilot. What can I find for you today?` }])}
+                      className="text-[9px] text-slate-400 hover:text-white transition-colors uppercase font-bold cursor-pointer"
+                    >
+                      Clear Chat
+                    </button>
+                  )}
+                </div>
+
+                {/* Chat Log Body */}
+                <div className="flex-1 overflow-y-auto my-3 space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20 scroll-smooth">
+                  {aiChat.map((msg, index) => (
+                    <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-[11px] leading-relaxed ${
+                        msg.sender === 'user'
+                          ? 'bg-sky-500 text-white rounded-tr-none shadow-sm shadow-sky-500/25'
+                          : 'bg-white/5 text-slate-200 border border-white/5 rounded-tl-none'
+                      }`}>
+                        {msg.text}
                       </div>
                     </div>
-                    <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed">
-                      Manage your profile, active order shipments, and wishlisted products seamlessly.
-                    </p>
-                    
-                    {/* Personalized links grid */}
-                    <div className="grid grid-cols-2 gap-2.5 pt-1">
-                      <button
-                        onClick={() => navigate('/orders')}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/50 bg-white dark:bg-slate-900/40 hover:bg-sky-50/50 dark:hover:bg-slate-750 transition-all text-center group cursor-pointer"
-                      >
-                        <ShoppingBag className="w-4 h-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350">My Orders</span>
-                      </button>
-                      <button
-                        onClick={() => navigate('/wishlist')}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/50 bg-white dark:bg-slate-900/40 hover:bg-rose-50/30 dark:hover:bg-slate-750 transition-all text-center group cursor-pointer relative"
-                      >
-                        <Heart className="w-4 h-4 text-rose-500 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350">Wishlist</span>
-                        {wishlistCount > 0 && (
-                          <span className="absolute top-1 right-2 bg-rose-500 text-white text-[8px] font-extrabold h-4 px-1.5 rounded-full flex items-center justify-center">
-                            {wishlistCount}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => navigate('/cart')}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/50 bg-white dark:bg-slate-900/40 hover:bg-sky-50/50 dark:hover:bg-slate-750 transition-all text-center group cursor-pointer relative"
-                      >
-                        <ShoppingCart className="w-4 h-4 text-sky-500 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350">Active Cart</span>
-                        {cartCount > 0 && (
-                          <span className="absolute top-1 right-2 bg-sky-500 text-white text-[8px] font-extrabold h-4 px-1.5 rounded-full flex items-center justify-center">
-                            {cartCount}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => navigate('/profile')}
-                        className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/50 bg-white dark:bg-slate-900/40 hover:bg-sky-50/50 dark:hover:bg-slate-750 transition-all text-center group cursor-pointer"
-                      >
-                        <User className="w-4 h-4 text-indigo-500 group-hover:scale-110 transition-transform" />
-                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-350">My Profile</span>
-                      </button>
+                  ))}
+                  {aiLoading && (
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 bg-white/5 border border-white/5 rounded-2xl rounded-tl-none px-3 py-2 w-max animate-pulse">
+                      <div className="flex gap-1">
+                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                        <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                      </div>
+                      Thinking...
                     </div>
-                  </div>
-                  
-                  <span className="text-[9px] text-slate-450 dark:text-slate-500 font-bold tracking-wider uppercase text-center mt-3 block border-t border-slate-100 dark:border-slate-750 pt-2.5">
-                    Fast Pass shopping enabled
-                  </span>
+                  )}
                 </div>
-              ) : (
-                <div className="bg-gradient-to-b from-amber-50/60 to-white dark:from-slate-800 dark:to-slate-850 border border-slate-200/60 dark:border-slate-700/60 rounded-3xl p-5 shadow-lg flex flex-col justify-between hover:shadow-xl transition-all duration-300">
-                  <div className="space-y-4">
-                    <div className="w-10 h-10 bg-amber-105 dark:bg-amber-950/40 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400">
-                      <Gift className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-sm font-extrabold text-slate-850 dark:text-slate-100 tracking-tight leading-tight">
-                      Sign in for your best shopping experience
-                    </h3>
-                    <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed">
-                      Access personalized deals, track order shipments, save items to your wishlist, and secure easy checkout.
-                    </p>
-                    
-                    <div className="space-y-2 pt-2">
-                      <button
-                        onClick={() => navigate('/login')}
-                        className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-900 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer focus:outline-none"
-                      >
-                        Sign In Securely
-                      </button>
-                      <button
-                        onClick={() => navigate('/register')}
-                        className="w-full py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/60 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer focus:outline-none"
-                      >
-                        Create an account
-                      </button>
-                    </div>
+
+                {/* Quick Recommendation Chips */}
+                {aiChat.length === 1 && !aiLoading && (
+                  <div className="flex flex-wrap gap-1.5 mb-3 flex-shrink-0 animate-fade-in">
+                    <button
+                      onClick={() => handleAiPrompt('Suggest smart tech')}
+                      className="text-[10px] font-semibold bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer hover:border-sky-400/30"
+                    >
+                      ⚡ Tech Deals
+                    </button>
+                    <button
+                      onClick={() => handleAiPrompt('Trending styles')}
+                      className="text-[10px] font-semibold bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer hover:border-sky-400/30"
+                    >
+                      👕 Style Guide
+                    </button>
+                    <button
+                      onClick={() => handleAiPrompt('Deals under ₹1,500')}
+                      className="text-[10px] font-semibold bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer hover:border-sky-400/30"
+                    >
+                      🔥 Under ₹1,500
+                    </button>
+                    <button
+                      onClick={() => handleAiPrompt('Track my order')}
+                      className="text-[10px] font-semibold bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-2.5 py-1 rounded-xl transition-all cursor-pointer hover:border-sky-400/30"
+                    >
+                      📦 Track Orders
+                    </button>
                   </div>
-                  
-                  <span className="text-[9px] text-slate-400 dark:text-slate-550 text-center block mt-3">
-                    Unlock futuristic shopping details.
-                  </span>
-                </div>
-              )}
+                )}
+
+                {/* Mock Input Form Bar */}
+                <form onSubmit={handleAiSubmit} className="flex items-center gap-2 border-t border-white/10 pt-3 flex-shrink-0">
+                  <input
+                    type="text"
+                    placeholder="Ask AI Copilot..."
+                    className="flex-1 bg-white/5 hover:bg-white/10 focus:bg-white/10 border border-white/10 focus:border-sky-500 focus:outline-none rounded-xl px-3 py-2 text-[11px] text-white placeholder-slate-500 transition-all focus:ring-1 focus:ring-sky-500"
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    disabled={aiLoading}
+                  />
+                  <button
+                    type="submit"
+                    disabled={aiLoading || !aiInput.trim()}
+                    className="p-2.5 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 disabled:opacity-50 disabled:scale-100 cursor-pointer"
+                  >
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+              </div>
 
             </div>
           </div>

@@ -34,16 +34,41 @@ export const CartProvider = ({ children }) => {
   }, [token]);
 
   // Add product to cart
-  const addToCart = async (productId, quantity = 1) => {
+  const addToCart = async (productId, quantity = 1, productDetails = null) => {
     if (!token) {
       throw new Error('Please log in to add items to cart.');
     }
+    
+    const previousCart = { ...cart };
+    
+    // Find if the item is already in cart
+    const existingIndex = cart.products.findIndex(
+      (item) => item && item.productId && (item.productId._id || item.productId).toString() === productId.toString()
+    );
+    
+    let updatedProducts = [...cart.products];
+    if (existingIndex > -1) {
+      updatedProducts[existingIndex] = {
+        ...updatedProducts[existingIndex],
+        quantity: updatedProducts[existingIndex].quantity + quantity
+      };
+    } else {
+      const newProductInfo = productDetails || { _id: productId };
+      updatedProducts.push({
+        productId: newProductInfo,
+        quantity: quantity
+      });
+    }
+    
+    setCart({ ...cart, products: updatedProducts });
+
     try {
       const response = await API.post('/cart', { productId, quantity });
       setCart(response.data.data);
       addToast('Product successfully added to cart.', 'success');
       return response.data;
     } catch (error) {
+      setCart(previousCart);
       const errMsg = error.response?.data?.message || 'Failed to add item to cart';
       addToast(errMsg, 'error');
       throw new Error(errMsg);
@@ -52,12 +77,28 @@ export const CartProvider = ({ children }) => {
 
   // Update item quantity
   const updateCartItemQuantity = async (productId, quantity) => {
+    const previousCart = { ...cart };
+    
+    const existingIndex = cart.products.findIndex(
+      (item) => item && item.productId && (item.productId._id || item.productId).toString() === productId.toString()
+    );
+    
+    if (existingIndex > -1) {
+      let updatedProducts = [...cart.products];
+      updatedProducts[existingIndex] = {
+        ...updatedProducts[existingIndex],
+        quantity: quantity
+      };
+      setCart({ ...cart, products: updatedProducts });
+    }
+
     try {
       const response = await API.put('/cart', { productId, quantity });
       setCart(response.data.data);
       addToast('Cart item count updated.', 'success');
       return response.data;
     } catch (error) {
+      setCart(previousCart);
       const errMsg = error.response?.data?.message || 'Failed to update cart quantity';
       addToast(errMsg, 'error');
       throw new Error(errMsg);
@@ -66,12 +107,20 @@ export const CartProvider = ({ children }) => {
 
   // Remove item from cart
   const removeFromCart = async (productId) => {
+    const previousCart = { ...cart };
+    
+    let updatedProducts = cart.products.filter(
+      (item) => item && item.productId && (item.productId._id || item.productId).toString() !== productId.toString()
+    );
+    setCart({ ...cart, products: updatedProducts });
+
     try {
       const response = await API.delete(`/cart/${productId}`);
       setCart(response.data.data);
       addToast('Item successfully removed from cart.', 'info');
       return response.data;
     } catch (error) {
+      setCart(previousCart);
       const errMsg = error.response?.data?.message || 'Failed to remove item from cart';
       addToast(errMsg, 'error');
       throw new Error(errMsg);

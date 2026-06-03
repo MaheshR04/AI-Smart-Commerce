@@ -170,7 +170,7 @@ export const ProductDetails = () => {
 
     setAddingToCart(true);
     try {
-      await addToCart(id, quantity);
+      await addToCart(id, quantity, product);
     } catch (error) {
       console.error(error.message);
     } finally {
@@ -188,7 +188,7 @@ export const ProductDetails = () => {
 
     setAddingToCart(true);
     try {
-      await addToCart(id, quantity);
+      await addToCart(id, quantity, product);
       navigate('/checkout');
     } catch (error) {
       console.error(error.message);

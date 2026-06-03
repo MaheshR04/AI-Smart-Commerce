@@ -55,7 +55,8 @@ export const Cart = () => {
 
   const handleMoveToCart = async (productId) => {
     try {
-      await addToCart(productId, 1);
+      const wishlistProduct = wishlist?.products?.find((p) => p && (p._id || p).toString() === productId.toString());
+      await addToCart(productId, 1, wishlistProduct);
       await toggleWishlist(productId);
     } catch (error) {
       alert(error.message);
