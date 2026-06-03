@@ -215,6 +215,30 @@ const unsplashImages = {
     'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&q=80&w=800',
     'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=800',
     'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?auto=format&fit=crop&q=80&w=800'
+  ],
+  Televisions: [
+    'https://images.unsplash.com/photo-1593305841991-05c297ba4575?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1601944179066-297acd3ad6d5?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1552533048-69222487ae41?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1461151351911-30c5b300300d?auto=format&fit=crop&q=80&w=800'
+  ],
+  Cameras: [
+    'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1502920917128-1da500748014?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1564466809058-bf4114d55352?auto=format&fit=crop&q=80&w=800'
+  ],
+  Tablets: [
+    'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1589739900243-4b52cd9b104e?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1561154464-82e9adf32764?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1611532736579-6b16e2b50449?auto=format&fit=crop&q=80&w=800'
+  ],
+  GamingConsoles: [
+    'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1605901309584-818e25960a8f?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1592155977687-cef9b1875150?auto=format&fit=crop&q=80&w=800'
   ]
 };
 
@@ -271,6 +295,31 @@ const getSpecsForSubcategory = (subcat, brand, modelName, variantIndex) => {
         { key: 'Storage Standard', value: ['USB 3.2 Flash Drive', 'Portable External SSD', 'MicroSD XC Card'][variantIndex % 3] },
         { key: 'Capacity', value: ['64 GB', '128 GB', '512 GB', '1 TB', '2 TB'][variantIndex % 5] },
         { key: 'Read Speed', value: ['150 MB/s', '520 MB/s', '1050 MB/s', '2000 MB/s'][variantIndex % 4] }
+      ];
+    case 'Televisions':
+      return [
+        { key: 'Screen Size', value: ['43 Inches', '55 Inches', '65 Inches', '75 Inches'][variantIndex % 4] },
+        { key: 'Display Technology', value: ['OLED', 'QLED', 'LED Backlit', 'Nanocell'][variantIndex % 4] },
+        { key: 'Refresh Rate', value: ['60 Hz', '120 Hz', '144 Hz'][variantIndex % 3] },
+        { key: 'Operating System', value: ['Android TV / Google TV', 'webOS Smart TV', 'Tizen OS Smart TV'][variantIndex % 3] }
+      ];
+    case 'Cameras':
+      return [
+        { key: 'Sensor Size', value: ['Full-Frame CMOS', 'APS-C CMOS', '1/1.9-inch Action Sensor'][variantIndex % 3] },
+        { key: 'Megapixels', value: ['12 MP', '24 MP', '33 MP', '45 MP'][variantIndex % 4] },
+        { key: 'Video Resolution', value: ['4K UHD', '5.3K Resolution', '8K Cinematic'][variantIndex % 3] }
+      ];
+    case 'Tablets':
+      return [
+        { key: 'Screen Size', value: ['10.9 Inches', '11.5 Inches', '12.4 Inches', '14.6 Inches'][variantIndex % 4] },
+        { key: 'Storage Capacity', value: ['64 GB', '128 GB', '256 GB', '512 GB'][variantIndex % 4] },
+        { key: 'Connectivity', value: ['Wi-Fi Only', 'Wi-Fi + 5G Cellular'][variantIndex % 2] }
+      ];
+    case 'GamingConsoles':
+      return [
+        { key: 'Console Type', value: ['Home Console', 'Handheld Hybrid Console', 'Portable PC Console'][variantIndex % 3] },
+        { key: 'Storage Capacity', value: ['64GB eMMC', '512GB SSD', '1TB Custom SSD'][variantIndex % 3] },
+        { key: 'Resolution Support', value: ['Up to 1080p', 'Up to 4K UHD', 'Up to 8K HDR'][variantIndex % 3] }
       ];
     case 'MensApparel':
     case 'WomensApparel':
@@ -478,6 +527,50 @@ export const generateAllProducts = () => {
             { name: 'Extreme MicroSDXC Memory Card', desc: 'High-speed storage card perfect for action cameras, smartphones, and 4K video recording, Class 10 certified.', price: 1499 },
             { name: 'Crucial BX500 Internal SSD', desc: 'Upgrade laptop performance with reliable internal 2.5 inch SATA solid state drive, running advanced boot speeds.', price: 4299 },
             { name: 'Dual OTG Drive Luxe Type-C', desc: 'All-metal 2-in-1 flash drive featuring reversible USB Type-C and traditional Type-A connectors for easy file swap.', price: 1599 }
+          ]
+        },
+        {
+          name: 'Televisions',
+          brands: ['Sony', 'Samsung', 'LG', 'OnePlus', 'Xiaomi'],
+          baseItems: [
+            { name: 'OLED 4K Smart TV', desc: 'Spectacular self-lit OLED pixels displaying perfect blacks, infinite contrast, and active AI processor 4K Gen 2.', price: 149999 },
+            { name: 'QLED Ultra HD Smart TV', desc: 'Quantum dot color technology producing over a billion shades, HDR10+, and powerful Dolby Atmos sound.', price: 69999 },
+            { name: 'Crystal 4K LED TV', desc: 'Crisp PurColor details, smooth Motion Xcelerator for gaming, and elegant bezel-less design.', price: 35999 },
+            { name: 'Nanocell 4K Cinema TV', desc: 'Pure colors enhanced by NanoCell technology, local dimming, and webOS smart assistant access.', price: 54999 },
+            { name: 'Bezel-less Smart LED TV', desc: 'High definition smart TV powered by Android TV OS, built-in Chromecast, and high fidelity speaker system.', price: 18999 }
+          ]
+        },
+        {
+          name: 'Cameras',
+          brands: ['Canon', 'Sony', 'Nikon', 'GoPro', 'Fujifilm'],
+          baseItems: [
+            { name: 'EOS R5 Mirrorless Camera', desc: 'Professional 45MP full-frame mirrorless camera carrying 8K raw video, high speed autofocus, and robust body stabilizer.', price: 339900 },
+            { name: 'Alpha 7 IV Full Frame Camera', desc: 'Superb 33MP hybrid camera for stills and video recording, outstanding real-time eye tracking, and fast BIONZ XR.', price: 219990 },
+            { name: 'HERO12 Black Action Camera', desc: 'Waterproof rugged action camera with HyperSmooth stabilization, 5.3K video recording capability, and dual LCD screens.', price: 39900 },
+            { name: 'Z6 II Mirrorless DSLR', desc: 'Dual EXPEED processors running high-speed continuous shooting, dual card slots, and excellent low-light sensitivity.', price: 164999 },
+            { name: 'Instax Mini Instant Camera', desc: 'Cute retro instant photo print camera featuring auto exposure, selfie mirror mode, and colorful chassis options.', price: 5999 }
+          ]
+        },
+        {
+          name: 'Tablets',
+          brands: ['Apple', 'Samsung', 'Lenovo', 'Xiaomi', 'OnePlus'],
+          baseItems: [
+            { name: 'iPad Pro M4', desc: 'Breakthrough thin design carrying the ultimate M4 chip performance, Ultra Retina XDR display, and Thunderbolt port.', price: 99900 },
+            { name: 'Galaxy Tab S9 Ultra', desc: 'Dynamic AMOLED 2X screen with bundled IP68 S-Pen, Snapdragon 8 Gen 2, and sleek armor aluminum build.', price: 108999 },
+            { name: 'Pad 6 Pro Performance Tablet', desc: 'Stunning 144Hz high refresh display, high speed Snapdragon 8+ Gen 1, and sleek metal body.', price: 26999 },
+            { name: 'Tab P12 Productivity Tablet', desc: 'Massive 3K display bundled with active stylus pen, quad JBL speaker setup, and long battery life.', price: 24999 },
+            { name: 'Pad Go Entertainment Tablet', desc: 'Super vibrant 2.4K display, quad speakers with Dolby Atmos, and fast 4G LTE cellular connectivity option.', price: 19999 }
+          ]
+        },
+        {
+          name: 'GamingConsoles',
+          brands: ['Sony', 'Microsoft', 'Nintendo', 'Asus', 'Lenovo'],
+          baseItems: [
+            { name: 'PlayStation 5 Slim', desc: 'Sleek slim chassis hosting ultra-high speed SSD, immersive 3D Audio, haptic feedback triggers, and ray tracing.', price: 54990 },
+            { name: 'Xbox Series X', desc: 'The fastest, most powerful Xbox console ever with 12 teraflops processing power, true 4K gaming, and velocity architecture.', price: 55990 },
+            { name: 'Switch OLED Console', desc: 'Vibrant 7-inch OLED screen console supporting handheld, tabletop, or docked TV play modes anywhere.', price: 32999 },
+            { name: 'ROG Ally Gaming Handheld', desc: 'High performance portable handheld PC running Windows 11, powered by AMD Ryzen Z1 Extreme, and full HD screen.', price: 64999 },
+            { name: 'Legion Go Console', desc: 'Ultimate handheld console featuring detachable controllers, massive 8.8-inch QHD screen, and AMD Z1 Extreme power.', price: 89999 }
           ]
         }
       ]
@@ -894,6 +987,28 @@ export const generateAllProducts = () => {
             const spec = specs[variantNum % specs.length];
             nameSuffix = ` (${spec}, ${color})`;
             priceMultiplier = 1.0 + (variantNum * 0.18);
+          } else if (subcatName === 'Televisions') {
+            const sizes = ['43"', '55"', '65"', '75"'];
+            const size = sizes[variantNum % sizes.length];
+            const techs = ['Smart LED', 'Quantum QLED', 'Cinema OLED'];
+            const tech = techs[variantNum % techs.length];
+            nameSuffix = ` (${size} ${tech}, ${color})`;
+            priceMultiplier = 1.0 + (variantNum * 0.25);
+          } else if (subcatName === 'Cameras') {
+            const options = ['Body Only', 'with 18-55mm Lens Kit', 'with 55-250mm Telephoto Kit', 'Creator Vlogging Bundle'];
+            const option = options[variantNum % options.length];
+            nameSuffix = ` - ${option}`;
+            priceMultiplier = 1.0 + (variantNum * 0.15);
+          } else if (subcatName === 'Tablets') {
+            const specs = ['64GB Wi-Fi', '128GB Wi-Fi+5G', '256GB Wi-Fi+5G', '512GB Wi-Fi'];
+            const spec = specs[variantNum % specs.length];
+            nameSuffix = ` (${spec}, ${color})`;
+            priceMultiplier = 1.0 + (variantNum * 0.15);
+          } else if (subcatName === 'GamingConsoles') {
+            const bundles = ['Standard Edition', 'Digital Slim Edition', 'Dual Controller Bundle', '1TB Limited Bundle'];
+            const bundle = bundles[variantNum % bundles.length];
+            nameSuffix = ` (${bundle}, ${color})`;
+            priceMultiplier = 1.0 + (variantNum * 0.10);
           } else if (subcatName === 'Storage') {
             const capacities = ['64GB', '128GB', '256GB', '512GB', '1TB'];
             nameSuffix = ` - ${capacities[variantNum % capacities.length]}`;
