@@ -32,7 +32,13 @@ API.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       // If we are on client browser, force-reload to auth state boundaries (handles routing redirects)
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+      if (
+        typeof window !== 'undefined' &&
+        !window.location.pathname.includes('/login') &&
+        !window.location.pathname.includes('/register') &&
+        !window.location.pathname.includes('/forgot-password') &&
+        !window.location.pathname.includes('/reset-password')
+      ) {
         window.location.href = '/login';
       }
     }

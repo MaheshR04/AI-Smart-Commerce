@@ -61,6 +61,11 @@ export const rateLimiter = (options = {}) => {
   const message = options.message || 'Too many requests. Please try again later.';
 
   return (req, res, next) => {
+    // Bypass rate limiting in development mode
+    if (process.env.NODE_ENV !== 'production') {
+      return next();
+    }
+
     // Determine user client IP address
     const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const now = Date.now();
@@ -98,7 +103,7 @@ export const rateLimiter = (options = {}) => {
 // Specialized Rate Limiters
 export const authRateLimiter = rateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 30, // Max 30 attempts per 15 minutes
+  max: 100, // Max 100 attempts per 15 minutes
   message: 'Too many authentication attempts. Please try again after 15 minutes.',
 });
 
@@ -167,5 +172,21 @@ export const validateReviewInput = (req, res, next) => {
     return res.status(400).json({ success: false, message: 'Comment is required and must be at least 3 characters long.' });
   }
 
+  next();
+};
+
+export const validateForgotPassword = (req, res, next) => {
+  const { email } = req.body;
+  if (!email || !/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+    return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+  }
+  next();
+};
+
+export const validateResetPassword = (req, res, next) => {
+  const { password } = req.body;
+  if (!password || password.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password is required and must be at least 6 characters long.' });
+  }
   next();
 };

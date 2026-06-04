@@ -85,7 +85,7 @@ export const Login = () => {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-slate-600">Password</label>
-              <span className="text-[10px] font-bold text-sky-600 cursor-not-allowed">Forgot Password?</span>
+              <Link to="/forgot-password" className="text-[10px] font-bold text-sky-600 hover:text-sky-700">Forgot Password?</Link>
             </div>
             <div className="relative flex items-center">
               <input

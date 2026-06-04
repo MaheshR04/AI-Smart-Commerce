@@ -438,3 +438,30 @@ export const sendDeliveryUpdateEmail = async (email, name, order) => {
     html,
   });
 };
+
+// 6. PASSWORD RESET EMAIL
+export const sendPasswordResetEmail = async (email, name, resetUrl) => {
+  const content = `
+    <h2 style="margin-top: 0; color: #1e293b; font-size: 18px; font-weight: 700;">Password Reset Request</h2>
+    <p>Hello ${name},</p>
+    <p>You are receiving this email because you (or someone else) have requested the reset of the password for your account.</p>
+    <p>Please click on the button below to reset your password. This link is valid for 10 minutes only:</p>
+    
+    <div style="text-align: center; margin: 25px 0;">
+      <a href="${resetUrl}" style="background-color: #0ea5e9; color: #ffffff; padding: 12px 24px; border-radius: 10px; font-size: 12px; font-weight: 700; text-decoration: none; display: inline-block; box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);">Reset Password</a>
+    </div>
+
+    <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+    
+    <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0;">
+    <p style="font-size: 11px; color: #64748b; margin: 0;">If you're having trouble clicking the button, copy and paste the URL below into your web browser:</p>
+    <p style="font-size: 11px; color: #0ea5e9; word-break: break-all; margin: 5px 0 0 0;">${resetUrl}</p>
+  `;
+
+  const html = getBaseHtmlLayout('Password Reset Request', '#0ea5e9', content);
+  return await dispatchEmail({
+    to: email,
+    subject: 'AI Smart Commerce - Password Reset Request',
+    html,
+  });
+};

@@ -10,6 +10,8 @@ import {
   getAllUsers,
   updateUserRole,
   deleteUser,
+  forgotPassword,
+  resetPassword,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/admin.js';
@@ -18,6 +20,8 @@ import {
   validateUserRegister,
   validateUserLogin,
   validateAddressInput,
+  validateForgotPassword,
+  validateResetPassword,
 } from '../middleware/security.js';
 
 const router = express.Router();
@@ -25,6 +29,8 @@ const router = express.Router();
 // Public routes
 router.post('/register', authRateLimiter, validateUserRegister, registerUser);
 router.post('/login', authRateLimiter, validateUserLogin, loginUser);
+router.post('/forgotpassword', validateForgotPassword, forgotPassword);
+router.put('/resetpassword/:resetToken', validateResetPassword, resetPassword);
 
 // Personal profile routes
 router.route('/profile')
