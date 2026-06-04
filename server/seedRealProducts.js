@@ -368,6 +368,188 @@ const realProducts = [
       { key: "Item Volume", value: "50 ml" },
       { key: "Formula", value: "Oil-Free Gel-Cream" }
     ]
+  },
+  {
+    name: "boAt Rockerz 255 Pro+ Wireless Neckband Bluetooth Earphones with IPX7 Water Resistance",
+    brand: "boAt",
+    category: "Electronics",
+    price: 3990,
+    discountPrice: 1299,
+    images: [
+      "https://images.unsplash.com/photo-1613040809024-b4ef7ba99bc3?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "Unleash the power of music with boAt Rockerz 255 Pro+. Features 10mm drivers for premium boAt signature sound, ASAP Charge technology providing 10 hours of play with just 10 mins of charging, and a durable IPX7 water-resistant design.",
+    rating: 4.3,
+    specifications: [
+      { key: "Connectivity Type", value: "Wireless Bluetooth 5.0" },
+      { key: "Playback Time", value: "Up to 40 Hours" },
+      { key: "ASAP Fast Charge", value: "10 Mins = 10 Hours Playback" },
+      { key: "Water Resistance", value: "IPX7 Water & Sweat Resistant" }
+    ]
+  },
+  {
+    name: "boAt Airdopes 141 Bluetooth True Wireless Earbuds with 42 Hours Playtime",
+    brand: "boAt",
+    category: "Electronics",
+    price: 4490,
+    discountPrice: 1499,
+    images: [
+      "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "Immerse yourself in your favorite playlists with boAt Airdopes 141. Enjoy up to 42 hours of total playtime, ultra-low latency BEAST Mode for lag-free gaming, and dual mic ENx technology for crystal clear voice calls.",
+    rating: 4.4,
+    specifications: [
+      { key: "Playback Time", value: "Up to 42 Hours (With Case)" },
+      { key: "Latency Rate", value: "85ms Low Latency (BEAST Mode)" },
+      { key: "Driver Size", value: "8 mm Dynamic Drivers" },
+      { key: "Voice Tech", value: "Dual Mic ENx technology" }
+    ]
+  },
+  {
+    name: "OnePlus Nord CE4 Lite 5G (Super Canyon, 8GB RAM, 128GB Storage)",
+    brand: "OnePlus",
+    category: "Electronics",
+    price: 19999,
+    discountPrice: 17999,
+    images: [
+      "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "The OnePlus Nord CE4 Lite 5G delivers high-speed performance with Snapdragon 695 chipset. Boasting a brilliant 6.67\" 120Hz AMOLED display, a 50MP Sony LYT-600 main camera with OIS, and a massive 5500mAh battery with 80W SUPERVOOC fast charging.",
+    rating: 4.5,
+    specifications: [
+      { key: "RAM & Storage", value: "8 GB LPDDR4X | 128 GB UFS 2.2" },
+      { key: "Processor", value: "Snapdragon 695 5G Mobile Platform" },
+      { key: "Primary Camera", value: "50 MP Sony LYT-600 with OIS" },
+      { key: "Display", value: "6.67 Inches AMOLED 120Hz" },
+      { key: "Charging Tech", value: "80W SUPERVOOC Fast Charge" }
+    ]
+  },
+  {
+    name: "iQOO Z9 Lite 5G (Aqua Flow, 6GB RAM, 128GB Storage)",
+    brand: "iQOO",
+    category: "Electronics",
+    price: 14499,
+    discountPrice: 10499,
+    images: [
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "Empower your connectivity with iQOO Z9 Lite 5G. Running on Dimensity 6300 processor, it features a 50MP Sony AI camera, a smooth 90Hz high-brightness display, and IP64 dust & water resistance.",
+    rating: 4.2,
+    specifications: [
+      { key: "RAM & Storage", value: "6 GB RAM | 128 GB ROM" },
+      { key: "Processor", value: "MediaTek Dimensity 6300 octa-core" },
+      { key: "Primary Camera", value: "50 MP AI Sony Camera" },
+      { key: "Display", value: "6.56 Inches 90Hz High Brightness" },
+      { key: "Durability", value: "IP64 Dust & Water Resistant" }
+    ]
+  },
+  {
+    name: "Vivo T3x 5G (Celestial Green, 6GB RAM, 128GB Storage)",
+    brand: "Vivo",
+    category: "Electronics",
+    price: 18999,
+    discountPrice: 14999,
+    images: [
+      "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "The Vivo T3x 5G packs heavy-duty power with Snapdragon 6 Gen 1 chipset. Features a stunning 6.72\" 120Hz FHD+ display, dual stereo speakers, and a large 6000mAh battery with 44W FlashCharge.",
+    rating: 4.4,
+    specifications: [
+      { key: "RAM & Storage", value: "6 GB RAM | 128 GB Storage" },
+      { key: "Processor", value: "Snapdragon 6 Gen 1 (4nm)" },
+      { key: "Battery", value: "6000 mAh High Capacity" },
+      { key: "Display", value: "6.72 Inches 120Hz FHD+" },
+      { key: "Speaker System", value: "Dual Stereo Speakers" }
+    ]
+  },
+  {
+    name: "Vega Off Road D/D Dull Black Helmet (Size L)",
+    brand: "Vega",
+    category: "Fashion",
+    price: 2499,
+    discountPrice: 1999,
+    images: [
+      "https://images.unsplash.com/photo-1599819811279-d5ad9cccf838?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "Ride in style and absolute safety with Vega Off Road Helmet. Features dual-visor technology, ISI certification, high-impact ABS shell structure, and a removable, washable sweat-absorbing inner liner.",
+    rating: 4.5,
+    specifications: [
+      { key: "Safety Certification", value: "ISI Approved Certification" },
+      { key: "Shell Material", value: "High-Impact ABS Outer Shell" },
+      { key: "Visor Type", value: "Scratch-Resistant Dual Visor" },
+      { key: "Liner", value: "Removable & Washable Breathable Fabric" }
+    ]
+  },
+  {
+    name: "3M Auto Special Car Care Kit",
+    brand: "3M",
+    category: "Home & Kitchen",
+    price: 1499,
+    discountPrice: 999,
+    images: [
+      "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "Keep your car looking brand new with the 3M Auto Special Car Care Kit. This comprehensive kit includes high-gloss car wash shampoo, tyre dresser liquid, dashboard dresser spray, and a high-performance microfiber cleaning cloth.",
+    rating: 4.3,
+    specifications: [
+      { key: "Kit Inclusions", value: "Car Wash (250ml), Dashboard Dresser (250ml), Tyre Dresser (250ml), Microfiber Cloth" },
+      { key: "Product Form", value: "Liquid & Spray Formulations" },
+      { key: "Functionality", value: "High-Gloss Cleaning & Protective Dressing" }
+    ]
+  },
+  {
+    name: "Amazon Brand - Solimo Premium 100% Cotton Double Bedsheet with 2 Pillow Covers",
+    brand: "Amazon",
+    category: "Home & Kitchen",
+    price: 1299,
+    discountPrice: 799,
+    images: [
+      "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "Add premium comfort to your bedroom with the Solimo Double Bedsheet. Crafted from 100% cotton with a thread count of 144, it is soft, breathable, and features fade-resistant vibrant prints.",
+    rating: 4.2,
+    specifications: [
+      { key: "Material", value: "100% Pure Premium Cotton" },
+      { key: "Thread Count", value: "144 TC Breathable Fabric" },
+      { key: "Dimensions", value: "Bedsheet: 228 x 254 cm, Pillow Covers: 46 x 68 cm" },
+      { key: "Pack Contents", value: "1 Double Bedsheet with 2 Pillow Covers" }
+    ]
+  },
+  {
+    name: "D'Decor Polyester Room Darkening Door Curtains (Pack of 2)",
+    brand: "D'Decor",
+    category: "Home & Kitchen",
+    price: 2999,
+    discountPrice: 1899,
+    images: [
+      "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "Elevate your living space with D'Decor room darkening curtains. Crafted from premium high-density polyester fabric, they reduce outside noise, block out up to 90% of sunlight, and provide excellent thermal insulation.",
+    rating: 4.6,
+    specifications: [
+      { key: "Material Composition", value: "100% High-Density Polyester" },
+      { key: "Opacity Status", value: "Room Darkening (Blocks 90% Light)" },
+      { key: "Dimensions", value: "7 feet (Door Size) - 213 x 116 cm" },
+      { key: "Hanging Type", value: "Metal Eyelet Grommet Top" }
+    ]
+  },
+  {
+    name: "Lykos High-Power Portable Car Vacuum Cleaner with 15ft Power Cord",
+    brand: "Lykos",
+    category: "Home & Kitchen",
+    price: 2499,
+    discountPrice: 1299,
+    images: [
+      "https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&q=80&w=800"
+    ],
+    description: "Effortlessly clean dust and dirt from every corner of your vehicle with the Lykos Portable Car Vacuum Cleaner. Powered by a high-efficiency 120W motor, it plugs directly into your car's 12V cigarette lighter port and includes versatile nozzle accessories.",
+    rating: 4.2,
+    specifications: [
+      { key: "Power Source", value: "12V Car Cigarette Lighter Plug" },
+      { key: "Motor Power", value: "120 Watts High-Suction Motor" },
+      { key: "Cord Length", value: "15 Feet Extra Long Power Cord" },
+      { key: "Filter Type", value: "Washable Stainless Steel HEPA Filter" }
+    ]
   }
 ];
 
