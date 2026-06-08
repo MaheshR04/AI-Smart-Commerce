@@ -140,6 +140,31 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  // Add multiple products to cart in bulk
+  const addBulkToCart = async (items) => {
+    if (!token) {
+      addToast('Please log in to add items to cart.', 'error');
+      throw new Error('Please log in to add items to cart.');
+    }
+
+    const previousCart = { ...cart };
+    setLoading(true);
+
+    try {
+      const response = await API.post('/cart/bulk', { items });
+      setCart(response.data.data);
+      addToast('Setup bundle items added to cart!', 'success');
+      return response.data;
+    } catch (error) {
+      setCart(previousCart);
+      const errMsg = error.response?.data?.message || 'Failed to add items to cart';
+      addToast(errMsg, 'error');
+      throw new Error(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Calculated utilities
   const getCartCount = () => {
     if (!cart || !Array.isArray(cart.products)) return 0;
@@ -165,6 +190,7 @@ export const CartProvider = ({ children }) => {
         loading,
         fetchCart,
         addToCart,
+        addBulkToCart,
         updateCartItemQuantity,
         removeFromCart,
         clearCart,

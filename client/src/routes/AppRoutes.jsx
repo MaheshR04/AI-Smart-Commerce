@@ -16,6 +16,7 @@ import Profile from '../pages/Profile';
 import ProtectedRoute from '../components/ProtectedRoute';
 import NotFound from '../pages/NotFound';
 import Compare from '../pages/Compare';
+import GoalPlanner from '../pages/GoalPlanner';
 
 export const AppRoutes = () => {
   return (
@@ -28,6 +29,7 @@ export const AppRoutes = () => {
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/products/:id" element={<ProductDetails />} />
       <Route path="/compare" element={<Compare />} />
+      <Route path="/goal-planner" element={<GoalPlanner />} />
 
       {/* Protected User Pages */}
       <Route

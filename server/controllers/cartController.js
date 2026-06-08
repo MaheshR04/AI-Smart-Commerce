@@ -201,3 +201,56 @@ export const clearCart = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc    Add multiple products to cart in one request
+ * @route   POST /api/cart/bulk
+ * @access  Private
+ */
+export const addBulkToCart = async (req, res, next) => {
+  const { items } = req.body; // Array of { productId, quantity }
+
+  try {
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      res.status(400);
+      throw new Error('Items array is required');
+    }
+
+    let cart = await Cart.findOne({ userId: req.user._id });
+    if (!cart) {
+      cart = new Cart({ userId: req.user._id, products: [] });
+    }
+
+    for (const item of items) {
+      const { productId, quantity = 1 } = item;
+      const product = await Product.findById(productId);
+      if (!product) continue;
+
+      const itemIndex = cart.products.findIndex(
+        (p) => p.productId.toString() === productId.toString()
+      );
+
+      if (itemIndex > -1) {
+        const newQuantity = cart.products[itemIndex].quantity + Number(quantity);
+        cart.products[itemIndex].quantity = Math.min(product.stock, newQuantity);
+      } else {
+        cart.products.push({ productId, quantity: Math.min(product.stock, Number(quantity)) });
+      }
+    }
+
+    await cart.save();
+
+    const populatedCart = await Cart.findOne({ userId: req.user._id }).populate({
+      path: 'products.productId',
+      select: 'name price discountPrice images stock brand category',
+    });
+
+    res.json({
+      success: true,
+      message: 'Items added to cart successfully',
+      data: populatedCart,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -480,3 +480,153 @@ Return your response strictly in the following JSON format:
     next(error);
   }
 };
+
+/**
+ * @desc    AI Goal-Based Shopping Planner
+ * @route   POST /api/ai/plan-goal
+ * @access  Public
+ */
+export const planGoalSetup = async (req, res, next) => {
+  try {
+    const { goal } = req.body;
+    if (!goal) {
+      return res.status(400).json({ success: false, message: 'Goal query is required' });
+    }
+
+    const dbProducts = await getAllProductsSummary();
+    const gemini = getGeminiClient();
+
+    if (gemini) {
+      try {
+        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const systemPrompt = `You are a premium AI Goal-Based Shopping Planner for "SmartCommerce".
+Your task is to take a user's shopping goal (like "Build Gaming Setup", "Start YouTube Channel", "Home Gym Setup", "Programming Setup") and recommend a bundle of products from our catalog.
+
+Here is our complete active product catalog (JSON format):
+${JSON.stringify(dbProducts, null, 2)}
+
+Instructions:
+1. Recommending items: Recommend only from the catalog list above. Select 2 to 4 products that logically fit the goal.
+2. Direct reasons: For each recommended product, write a brief, compelling 1-2 sentence reason explaining why it fits this goal.
+3. Response formatting: Return your response strictly in the following JSON format:
+{
+  "goalName": "The goal name formatted nicely",
+  "intro": "A 2-3 sentence overview explaining how this setup bundle solves the user's goal.",
+  "bundleRecommendations": [
+    { "productId": "productIdStr", "reason": "Reason why it fits the goal" }
+  ]
+}
+Make sure to escape control characters in strings for valid JSON parsing.`;
+
+        const prompt = `${systemPrompt}\n\nUser Goal: "${goal}"`;
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text().trim();
+        
+        let jsonStr = responseText;
+        if (jsonStr.startsWith('```json')) {
+          jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
+        } else if (jsonStr.startsWith('```')) {
+          jsonStr = jsonStr.substring(3, jsonStr.length - 3).trim();
+        }
+
+        const parsed = JSON.parse(jsonStr);
+
+        // Populate the full product objects for the bundle
+        const ids = parsed.bundleRecommendations.map(item => item.productId);
+        const products = await Product.find({ _id: { $in: ids } });
+
+        const mappedRecommendations = parsed.bundleRecommendations.map(item => {
+          const matchedProd = products.find(p => p._id.toString() === item.productId);
+          return {
+            product: matchedProd,
+            reason: item.reason
+          };
+        }).filter(item => item.product);
+
+        return res.json({
+          success: true,
+          goalName: parsed.goalName,
+          intro: parsed.intro,
+          recommendations: mappedRecommendations
+        });
+      } catch (err) {
+        console.warn('Gemini Goal Planner call failed, falling back to local planner matching engine:', err.message);
+      }
+    }
+
+    // --- LOCAL GOAL PLANNER FALLBACK ---
+    let goalName = goal;
+    let intro = '';
+    let recommendations = [];
+    const lower = goal.toLowerCase();
+
+    if (lower.includes('gaming') || lower.includes('playstation') || lower.includes('game')) {
+      goalName = 'Build Premium Gaming Setup';
+      intro = 'Create the ultimate home gaming station with a next-generation console, high-performance visual processing, and top-tier active noise-cancelling acoustics.';
+      
+      const ps5 = await Product.findOne({ name: /playstation/i });
+      const sonyHeadphones = await Product.findOne({ name: /wh-1000xm5/i });
+      const s24 = await Product.findOne({ name: /s24 ultra/i });
+
+      if (ps5) recommendations.push({ product: ps5, reason: 'The central hub of your gaming setup, delivering blazing-fast loading speeds and 4K ray-traced visuals.' });
+      if (sonyHeadphones) recommendations.push({ product: sonyHeadphones, reason: 'Provides industry-leading active noise cancellation for complete immersion in game soundscapes.' });
+      if (s24) recommendations.push({ product: s24, reason: 'Perfect secondary display and companion controller for console sync apps and high-fidelity mobile gaming.' });
+    } 
+    else if (lower.includes('youtube') || lower.includes('video') || lower.includes('vlog') || lower.includes('channel')) {
+      goalName = 'Start Professional YouTube Channel';
+      intro = 'Kickstart your content creation journey with ultra-high resolution recording hardware, an advanced editing studio setup, and high-fidelity sound monitoring.';
+      
+      const drone = await Product.findOne({ name: /dji mini/i });
+      const macbook = await Product.findOne({ name: /macbook pro/i });
+      const sonyHeadphones = await Product.findOne({ name: /wh-1000xm5/i });
+
+      if (drone) recommendations.push({ product: drone, reason: 'Enables high-definition 4K aerial shots and professional cinematic angles to elevate production values.' });
+      if (macbook) recommendations.push({ product: macbook, reason: 'A video editing powerhouse equipped with Apple silicon to render complex Timelines without frame drops.' });
+      if (sonyHeadphones) recommendations.push({ product: sonyHeadphones, reason: 'Allows precise audio editing, noise monitoring, and vocal leveling with premium acoustics.' });
+    } 
+    else if (lower.includes('gym') || lower.includes('workout') || lower.includes('fitness') || lower.includes('health')) {
+      goalName = 'Home Gym & Fitness Setup';
+      intro = 'Optimize your home workout area with heavy-duty training footwear, high-comfort athletic wear, and smart cleaning tools to maintain a hygienic environment.';
+      
+      const nike = await Product.findOne({ name: /alpha trainer/i });
+      const adidas = await Product.findOne({ name: /ultraboost/i });
+      const dyson = await Product.findOne({ name: /dyson v15/i });
+
+      if (nike) recommendations.push({ product: nike, reason: 'Features a flat, supportive rubber base designed specifically for high-impact lifts and training stability.' });
+      if (adidas) recommendations.push({ product: adidas, reason: 'Provides cloud-like boost cushioning for long-distance runs and high-intensity cardio exercises.' });
+      if (dyson) recommendations.push({ product: dyson, reason: 'Ensures your home gym remains clean, hygienic, and free of dust or pet dander with laser-assisted suction.' });
+    } 
+    else {
+      // Default / Programming setup fallback
+      goalName = lower.includes('program') || lower.includes('code') || lower.includes('developer') 
+        ? 'Professional Software Programming Setup' 
+        : `Shopping Plan for: ${goal}`;
+      intro = 'Build a high-efficiency development workflow with processing power built for compilation tasks, noise isolation, and productivity habits.';
+
+      const macbook = await Product.findOne({ name: /macbook pro/i });
+      const sonyHeadphones = await Product.findOne({ name: /wh-1000xm5/i });
+      const habits = await Product.findOne({ name: /atomic habits/i });
+
+      if (macbook) recommendations.push({ product: macbook, reason: 'Executes compilation pipelines, Docker containers, and local dev servers with blazing efficiency.' });
+      if (sonyHeadphones) recommendations.push({ product: sonyHeadphones, reason: 'Creates a quiet, focused development zone to help you reach a state of flow while writing code.' });
+      if (habits) recommendations.push({ product: habits, reason: 'Learn James Clear\'s proven guidelines to form deep work habits and structured learning routines.' });
+    }
+
+    // Fallback if DB query was empty
+    if (recommendations.length === 0) {
+      const fallbackProds = await Product.find({}).limit(2);
+      fallbackProds.forEach(p => {
+        recommendations.push({ product: p, reason: 'A popular high-quality item from our catalog to help achieve your targets.' });
+      });
+    }
+
+    return res.json({
+      success: true,
+      goalName,
+      intro,
+      recommendations
+    });
+  } catch (error) {
+    next(error);
+  }
+};

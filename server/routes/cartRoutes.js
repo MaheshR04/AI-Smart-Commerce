@@ -5,6 +5,7 @@ import {
   updateCartItemQuantity,
   removeFromCart,
   clearCart,
+  addBulkToCart,
 } from '../controllers/cartController.js';
 import { protect } from '../middleware/auth.js';
 
@@ -18,6 +19,7 @@ router.route('/')
   .put(updateCartItemQuantity);
 
 router.post('/clear', clearCart);
+router.post('/bulk', addBulkToCart);
 router.route('/:productId')
   .delete(removeFromCart);
 
