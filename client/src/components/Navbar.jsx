@@ -203,6 +203,13 @@ export const Navbar = () => {
               >
                 Home
               </Link>
+              <Link
+                to="/compare"
+                className="px-3 py-2 text-slate-600 dark:text-slate-350 hover:text-sky-600 dark:hover:text-sky-400 text-xs font-bold transition-all cursor-pointer"
+                title="AI Product Comparison"
+              >
+                AI Compare
+              </Link>
 
               {/* Theme Toggler */}
               <button
@@ -386,6 +393,13 @@ export const Navbar = () => {
               }}
             >
               Home
+            </Link>
+            <Link
+              to="/compare"
+              className="px-3 py-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              AI Compare
             </Link>
 
             <Link

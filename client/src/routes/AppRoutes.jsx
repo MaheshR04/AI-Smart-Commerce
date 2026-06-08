@@ -15,6 +15,7 @@ import AdminDashboard from '../pages/AdminDashboard';
 import Profile from '../pages/Profile';
 import ProtectedRoute from '../components/ProtectedRoute';
 import NotFound from '../pages/NotFound';
+import Compare from '../pages/Compare';
 
 export const AppRoutes = () => {
   return (
@@ -26,6 +27,7 @@ export const AppRoutes = () => {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/products/:id" element={<ProductDetails />} />
+      <Route path="/compare" element={<Compare />} />
 
       {/* Protected User Pages */}
       <Route

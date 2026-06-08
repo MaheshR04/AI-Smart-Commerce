@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
 import SkeletonCard from '../components/SkeletonCard';
+import API from '../services/api';
 import { 
   Filter, SlidersHorizontal, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight, 
   Sparkles, ArrowRight, Eye, Star, ShoppingBag, Truck, ShieldCheck, RotateCcw, 
@@ -58,35 +59,38 @@ export const Home = () => {
     setAiChat(prev => [...prev, { sender: 'user', text: promptText }]);
     setAiLoading(true);
 
-    setTimeout(() => {
-      let replyText = "";
-      const lower = promptText.toLowerCase();
+    try {
+      const chatHistory = aiChat.map(c => ({
+        role: c.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: c.text }]
+      }));
 
-      if (lower.includes('tech') || lower.includes('electronics') || lower.includes('gadgets')) {
-        replyText = "Sure thing! I've filtered the store catalog for our premium Electronics. Check out the tech deals below!";
-        updateFilters({ category: 'Electronics', page: 1 });
-      } else if (lower.includes('style') || lower.includes('fashion') || lower.includes('apparel') || lower.includes('clothing')) {
-        replyText = "Got it. I've set the filters to show the latest Modern Style & Apparel collections. Take a look at the apparel products!";
-        updateFilters({ category: 'Fashion', page: 1 });
-      } else if (lower.includes('1500') || lower.includes('under') || lower.includes('cheap') || lower.includes('budget')) {
-        replyText = "No problem! I've filtered the list to display products under ₹1,500 to match your budget.";
-        updateFilters({ maxPrice: '1500', page: 1 });
-      } else if (lower.includes('track') || lower.includes('order')) {
-        replyText = "You can view and track your shipments directly on your My Orders page. Let me redirect you there!";
-        setTimeout(() => {
-          navigate('/orders');
-        }, 1500);
-      } else if (lower.includes('clear') || lower.includes('reset') || lower.includes('home')) {
-        replyText = "I've reset the filters for you! Enjoy browsing the default homepage feed.";
-        resetFilters();
+      const response = await API.post('/ai/chat', {
+        message: promptText,
+        history: chatHistory
+      });
+
+      if (response.data && response.data.success) {
+        setAiChat(prev => [...prev, { 
+          sender: 'ai', 
+          text: response.data.reply, 
+          recommendations: response.data.recommendations 
+        }]);
       } else {
-        replyText = `Searching catalog for "${promptText}". I've updated the search query filters for you.`;
-        updateFilters({ keyword: promptText, page: 1 });
+        setAiChat(prev => [...prev, { 
+          sender: 'ai', 
+          text: "I'm sorry, I'm having trouble processing that request right now." 
+        }]);
       }
-
-      setAiChat(prev => [...prev, { sender: 'ai', text: replyText }]);
+    } catch (err) {
+      console.error('AI chat failed:', err);
+      setAiChat(prev => [...prev, { 
+        sender: 'ai', 
+        text: "I'm sorry, I couldn't reach the AI service right now. Please try again later." 
+      }]);
+    } finally {
       setAiLoading(false);
-    }, 800);
+    }
   };
 
   const handleAiSubmit = (e) => {
@@ -529,13 +533,46 @@ export const Home = () => {
                 {/* Chat Log Body */}
                 <div className="flex-1 overflow-y-auto my-3 space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20 scroll-smooth">
                   {aiChat.map((msg, index) => (
-                    <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div key={index} className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'} space-y-1.5`}>
                       <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-[11px] leading-relaxed ${
                         msg.sender === 'user'
                           ? 'bg-sky-500 text-white rounded-tr-none shadow-sm shadow-sky-500/25'
                           : 'bg-white/5 text-slate-200 border border-white/5 rounded-tl-none'
                       }`}>
-                        {msg.text}
+                        <div className="whitespace-pre-line">{msg.text}</div>
+                        
+                        {/* Interactive recommendations */}
+                        {msg.recommendations && msg.recommendations.length > 0 && (
+                          <div className="mt-3 grid grid-cols-1 gap-2.5">
+                            {msg.recommendations.map((prod) => {
+                              if (!prod) return null;
+                              const priceVal = prod.discountPrice > 0 ? prod.discountPrice : prod.price;
+                              const imageSrc = prod.images && prod.images[0] ? prod.images[0] : '';
+                              return (
+                                <Link
+                                  key={prod._id}
+                                  to={`/products/${prod._id}`}
+                                  className="flex items-center gap-2 bg-slate-900/60 hover:bg-slate-900/80 border border-white/10 hover:border-sky-500/40 p-2 rounded-xl transition-all text-decoration-none group"
+                                >
+                                  <img
+                                    src={imageSrc || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=200'}
+                                    alt={prod.name}
+                                    className="w-10 h-10 object-cover rounded-lg flex-shrink-0"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-[10px] font-bold text-slate-100 truncate group-hover:text-sky-400 transition-colors">
+                                      {prod.name}
+                                    </h4>
+                                    <p className="text-[9px] text-slate-400 mt-0.5 font-semibold">
+                                      {prod.brand} | <span className="text-sky-400 font-bold">₹{priceVal.toLocaleString('en-IN')}</span>
+                                    </p>
+                                  </div>
+                                  <ArrowRight className="w-3 h-3 text-slate-500 group-hover:text-sky-400 transition-colors flex-shrink-0" />
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

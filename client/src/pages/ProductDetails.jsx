@@ -5,7 +5,7 @@ import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import ReviewSection from '../components/ReviewSection';
 import ProductCard from '../components/ProductCard';
-import { Heart, ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronLeft, Eye, Sparkles, Share2 } from 'lucide-react';
+import { Heart, ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronLeft, Eye, Sparkles, Share2, Scale } from 'lucide-react';
 import { ToastContext } from '../context/ToastContext';
 import API from '../services/api';
 
@@ -27,7 +27,30 @@ export const ProductDetails = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [recentItems, setRecentItems] = useState([]);
   
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  
   const navigate = useNavigate();
+
+  // Load review summary
+  useEffect(() => {
+    const fetchSummary = async () => {
+      setSummaryLoading(true);
+      try {
+        const response = await API.get(`/ai/reviews/summary/${id}`);
+        if (response.data && response.data.success) {
+          setReviewSummary(response.data.summary);
+        }
+      } catch (err) {
+        console.error('Failed to fetch review summary:', err.message);
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+    if (id) {
+      fetchSummary();
+    }
+  }, [id]);
 
   // Load single product details
   useEffect(() => {
@@ -402,6 +425,14 @@ export const ProductDetails = () => {
                   Buy Now
                 </button>
               </div>
+              
+              <button
+                onClick={() => navigate(`/compare?ids=${id}`)}
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-200 rounded-xl font-bold text-xs shadow-sm transition-all duration-200 cursor-pointer"
+              >
+                <Scale className="w-3.5 h-3.5" />
+                Compare with Similar
+              </button>
             </div>
           )}
 
@@ -471,6 +502,71 @@ export const ProductDetails = () => {
           </div>
         </section>
       )}
+
+      {/* AI Review Summary panel */}
+      {summaryLoading ? (
+        <div className="bg-white/85 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/50 rounded-3xl p-6 shadow-sm animate-pulse space-y-4">
+          <div className="h-4 w-48 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+          <div className="space-y-2">
+            <div className="h-3 w-full bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+            <div className="h-3 w-5/6 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+          </div>
+        </div>
+      ) : reviewSummary ? (
+        <section className="bg-gradient-to-r from-indigo-50/50 to-sky-50/50 dark:from-slate-850 dark:to-slate-800 border border-indigo-100/50 dark:border-slate-700/50 rounded-3xl p-6 shadow-sm space-y-4 animate-fade-in">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-indigo-500 animate-pulse" />
+            <h3 className="text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider">
+              AI Review Summary
+            </h3>
+            <span className="text-[9px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-400 px-2 py-0.5 rounded-full">
+              Gemini Synthesized
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Pros */}
+            <div className="space-y-2">
+              <h4 className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-450 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                Pros (Key Strengths)
+              </h4>
+              <ul className="space-y-1.5">
+                {reviewSummary.pros && reviewSummary.pros.map((pro, index) => (
+                  <li key={index} className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                    <span className="text-emerald-500 font-bold">•</span>
+                    <span>{pro}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Cons */}
+            <div className="space-y-2">
+              <h4 className="text-[11px] font-extrabold text-red-500 dark:text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                Cons (Reported Drawbacks)
+              </h4>
+              <ul className="space-y-1.5">
+                {reviewSummary.cons && reviewSummary.cons.map((con, index) => (
+                  <li key={index} className="text-xs text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                    <span className="text-red-400 font-bold">•</span>
+                    <span>{con}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* AI Verdict */}
+          <div className="bg-white/60 dark:bg-slate-900/40 p-4 rounded-2xl border border-indigo-50/50 dark:border-slate-750">
+            <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Final Verdict</h5>
+            <p className="text-xs text-slate-700 dark:text-slate-355 mt-1 leading-relaxed italic">
+              "{reviewSummary.verdict}"
+            </p>
+          </div>
+        </section>
+      ) : null}
 
       {/* Reviews section wrapper */}
       <ReviewSection productId={id} />
