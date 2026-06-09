@@ -64,6 +64,26 @@ const productSchema = new mongoose.Schema(
       max: [5, 'Rating cannot exceed 5'],
     },
     specifications: [specificationSchema],
+    tags: {
+      type: [String],
+      default: [],
+    },
+    keywords: {
+      type: [String],
+      default: [],
+    },
+    useCases: {
+      type: [String],
+      default: [],
+    },
+    pros: {
+      type: [String],
+      default: [],
+    },
+    cons: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,
@@ -71,7 +91,15 @@ const productSchema = new mongoose.Schema(
 );
 
 // Search indexes
-productSchema.index({ name: 'text', brand: 'text', category: 'text', description: 'text' });
+productSchema.index({ 
+  name: 'text', 
+  brand: 'text', 
+  category: 'text', 
+  description: 'text', 
+  tags: 'text', 
+  keywords: 'text', 
+  useCases: 'text' 
+});
 
 const Product = mongoose.model('Product', productSchema);
 

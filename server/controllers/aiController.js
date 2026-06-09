@@ -1,6 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { OpenAI } from 'openai';
 import Product from '../models/Product.js';
 import Review from '../models/Review.js';
+import AIChat from '../models/AIChat.js';
+import AIRecommendation from '../models/AIRecommendation.js';
+import UserPreference from '../models/UserPreference.js';
+import UserBehavior from '../models/UserBehavior.js';
 
 // Initialize Gemini API if key is present
 const getGeminiClient = () => {
@@ -10,6 +15,18 @@ const getGeminiClient = () => {
     return new GoogleGenerativeAI(apiKey);
   } catch (error) {
     console.error('Failed to initialize GoogleGenerativeAI:', error.message);
+    return null;
+  }
+};
+
+// Initialize OpenAI API if key is present
+const getOpenAIClient = () => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+  try {
+    return new OpenAI({ apiKey });
+  } catch (error) {
+    console.error('Failed to initialize OpenAI:', error.message);
     return null;
   }
 };
@@ -29,7 +46,12 @@ const getAllProductsSummary = async () => {
     activePrice: p.discountPrice > 0 ? p.discountPrice : p.price,
     rating: p.rating,
     description: p.description,
-    specifications: p.specifications
+    specifications: p.specifications,
+    tags: p.tags || [],
+    keywords: p.keywords || [],
+    useCases: p.useCases || [],
+    pros: p.pros || [],
+    cons: p.cons || []
   }));
 };
 
@@ -46,23 +68,57 @@ export const chatWithAI = async (req, res, next) => {
     }
 
     const dbProducts = await getAllProductsSummary();
+    const openai = getOpenAIClient();
     const gemini = getGeminiClient();
 
-    if (gemini) {
-      try {
-        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        
-        // Build prompt with context
-        const systemPrompt = `You are a helpful and intelligent AI Shopping Assistant for "SmartCommerce", a premium e-commerce platform.
-Your task is to understand the user's requirements and recommend matching products from our catalog.
+    // 1. Compile User Profile Context & Conversation History
+    let userContextStr = '';
+    let recentChatsStr = '';
+
+    if (req.user) {
+      const userPrefs = await UserPreference.findOne({ userId: req.user._id });
+      const userBehaviors = await UserBehavior.findOne({ userId: req.user._id })
+        .populate('viewedProducts.productId', 'name brand category price')
+        .populate('purchasedProducts.productId', 'name brand category price');
+
+      const recentChats = await AIChat.find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(5);
+
+      if (userPrefs) {
+        userContextStr += `- Favorite Brands: ${userPrefs.favoriteBrands.join(', ') || 'None'}\n`;
+        userContextStr += `- Favorite Categories: ${userPrefs.favoriteCategories.join(', ') || 'None'}\n`;
+        userContextStr += `- Estimated Budget Range: ₹${userPrefs.budgetRange?.min?.toLocaleString('en-IN') || 0} - ₹${userPrefs.budgetRange?.max?.toLocaleString('en-IN') || 0}\n`;
+        userContextStr += `- Explicit Interests: ${userPrefs.interests.join(', ') || 'None'}\n`;
+      }
+      
+      if (userBehaviors) {
+        const viewed = userBehaviors.viewedProducts.slice(-5).map(v => v.productId ? v.productId.name : 'Unknown').filter(Boolean);
+        const purchased = userBehaviors.purchasedProducts.slice(-5).map(p => p.productId ? p.productId.name : 'Unknown').filter(Boolean);
+        userContextStr += `- Recently Viewed Products: ${viewed.join(', ') || 'None'}\n`;
+        userContextStr += `- Recently Purchased Products: ${purchased.join(', ') || 'None'}\n`;
+      }
+
+      if (recentChats && recentChats.length > 0) {
+        recentChatsStr = recentChats.reverse().map(c => `User: ${c.query}\nAssistant: ${c.response}`).join('\n\n');
+      }
+    }
+
+    // 2. Build personalized system prompt
+    const systemPrompt = `You are a professional and helpful AI Shopping Assistant for "SmartCommerce", a premium e-commerce platform.
+Your task is to understand the user's requirements, analyze their preferences/behavior, and recommend matching products from our database.
+
+Here is the user profile context representing their shopping behavior and preferences:
+${userContextStr || 'No user behavior or preferences logged yet.'}
+
+Here is a brief conversation history context:
+${recentChatsStr || 'No previous chats.'}
 
 Here is our complete active product catalog (JSON format):
 ${JSON.stringify(dbProducts, null, 2)}
 
 Instructions:
-1. Recommending items: Recommend only from the catalog list above. Do NOT invent new products.
-2. Direct links: For every product you recommend, list its exact name, brand, active price (use discount price if greater than 0), and key specifications. 
-3. User intent: Pay close attention to category, brand preference, features, and price constraints (e.g. "under ₹50,000 for coding").
+1. Recommending items: Recommend only from the catalog list above. Do NOT invent new products. If no products match, politely explain what categories/brands are available.
+2. Be a shopping assistant: Help the user decide what to buy. Detail the brand, specifications, active price (use discount price if > 0), pros, cons, and use cases.
+3. User intent: Tailor choices to match the user's favorite brands, favorite categories, budget constraints, and explicit interests when appropriate.
 4. Response formatting: Use clear, beautifully structured markdown with bullet points.
 5. In your response JSON, also return a structured list of recommended product IDs in the "recommendations" array.
 
@@ -73,31 +129,75 @@ Return your response strictly in the following JSON format:
 }
 Make sure to escape control characters in strings for valid JSON parsing.`;
 
+    let parsed = null;
+
+    // 3. Try OpenAI API
+    if (openai) {
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+          ],
+          response_format: { type: 'json_object' }
+        });
+        const responseText = response.choices[0].message.content.trim();
+        parsed = JSON.parse(responseText);
+      } catch (err) {
+        console.warn('OpenAI API call failed, attempting Gemini fallback:', err.message);
+      }
+    }
+
+    // 4. Try Gemini API as fallback
+    if (!parsed && gemini) {
+      try {
+        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const prompt = `${systemPrompt}\n\nUser Question: "${message}"`;
         const result = await model.generateContent(prompt);
         const responseText = result.response.text().trim();
         
-        // Extract JSON block from response if model wraps it in markdown code blocks
         let jsonStr = responseText;
         if (jsonStr.startsWith('```json')) {
           jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
         } else if (jsonStr.startsWith('```')) {
           jsonStr = jsonStr.substring(3, jsonStr.length - 3).trim();
         }
-
-        const parsed = JSON.parse(jsonStr);
-        
-        // Fetch full product objects for recommended IDs
-        const matchedProducts = await Product.find({ _id: { $in: parsed.recommendations } });
-
-        return res.json({
-          success: true,
-          reply: parsed.reply,
-          recommendations: matchedProducts
-        });
+        parsed = JSON.parse(jsonStr);
       } catch (err) {
         console.warn('Gemini API call failed, falling back to local NLP matching engine:', err.message);
       }
+    }
+
+    // 5. If LLM succeeded, save logs and return response
+    if (parsed) {
+      const responseReply = parsed.reply;
+      let matchedProducts = [];
+      if (parsed.recommendations && parsed.recommendations.length > 0) {
+        matchedProducts = await Product.find({ _id: { $in: parsed.recommendations } });
+      }
+
+      // Save AIChat history
+      await AIChat.create({
+        userId: req.user ? req.user._id : undefined,
+        query: message,
+        response: responseReply
+      });
+
+      // Save AIRecommendation log
+      if (matchedProducts.length > 0) {
+        await AIRecommendation.create({
+          userId: req.user ? req.user._id : undefined,
+          query: message,
+          recommendedProducts: matchedProducts.map(p => p._id)
+        });
+      }
+
+      return res.json({
+        success: true,
+        reply: responseReply,
+        recommendations: matchedProducts
+      });
     }
 
     // --- LOCAL NLP / HEURISTIC FALLBACK HANDLER ---
@@ -123,7 +223,7 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
       matchedCategory = 'Beauty';
     }
 
-    // Parse price limits (e.g. "under 50,000", "below 1500")
+    // Parse price limits
     const priceMatches = lower.match(/(?:under|below|less than|max|budget of|within)\s*(?:rs\.?|inr|₹)?\s*([\d,]+)/i);
     if (priceMatches) {
       maxPriceLimit = Number(priceMatches[1].replace(/,/g, ''));
@@ -196,6 +296,22 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
       reply += `Feel free to click on the product card(s) below to view full specifications, add items to your cart, or check out! Let me know if you need any other options compared or searched.`;
     } else {
       reply = `I couldn't find any products in our current catalog that exactly match your filters. Try checking your spelling or adjusting your budget limits. \n\nYou can also browse our main categories like **Electronics**, **Fashion**, and **Home & Kitchen** directly from the homepage menu.`;
+    }
+
+    // Save AIChat history
+    await AIChat.create({
+      userId: req.user ? req.user._id : undefined,
+      query: message,
+      response: reply
+    });
+
+    // Save AIRecommendation log
+    if (recommended.length > 0) {
+      await AIRecommendation.create({
+        userId: req.user ? req.user._id : undefined,
+        query: message,
+        recommendedProducts: recommended.map(p => p._id)
+      });
     }
 
     return res.json({

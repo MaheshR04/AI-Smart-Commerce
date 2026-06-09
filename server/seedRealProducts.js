@@ -570,6 +570,110 @@ const seedReal = async () => {
     const productsToInsert = realProducts.map(prod => {
       const stock = Math.floor(Math.random() * 85) + 15; // random stock 15-100
       
+      const nameLower = prod.name.toLowerCase();
+      const descLower = prod.description.toLowerCase();
+      
+      const tags = [prod.brand, prod.category];
+      if (nameLower.includes('pro')) tags.push('Pro');
+      if (nameLower.includes('slim')) tags.push('Slim');
+      if (nameLower.includes('wireless') || nameLower.includes('bluetooth')) tags.push('Wireless');
+      if (nameLower.includes('detect') || nameLower.includes('laser')) tags.push('Smart');
+      if (prod.price > 40000) tags.push('Premium');
+      if (prod.discountPrice > 0) tags.push('On Sale');
+
+      // Add specifications values as tags
+      prod.specifications.forEach(spec => {
+        if (spec.value.length < 20) {
+          tags.push(spec.value);
+        }
+      });
+
+      const keywords = [
+        prod.name.split(' ').slice(0, 3).join(' ').toLowerCase(), 
+        `${prod.brand.toLowerCase()} ${prod.category.toLowerCase()}`
+      ];
+      if (prod.category === 'Electronics') {
+        keywords.push('tech gadget', 'personal electronics', 'smart device');
+        if (nameLower.includes('laptop') || nameLower.includes('macbook')) keywords.push('programming laptop', 'business laptop', 'student laptop');
+        if (nameLower.includes('console') || nameLower.includes('playstation') || nameLower.includes('ps5')) keywords.push('gaming console', 'hd gaming', 'home console');
+        if (nameLower.includes('phone') || nameLower.includes('smartphone') || nameLower.includes('galaxy')) keywords.push('mobile phone', 'android smartphone', '5g phone');
+        if (nameLower.includes('headphone') || nameLower.includes('noise')) keywords.push('noise cancelling headphones', 'audio gear', 'wireless listening');
+      } else if (prod.category === 'Fashion') {
+        keywords.push('stylish wear', 'casual fashion', 'branded clothing');
+        if (nameLower.includes('shoe') || nameLower.includes('trainer') || nameLower.includes('ultraboost')) keywords.push('running shoes', 'workout sneakers', 'athletic footwear');
+        if (nameLower.includes('jeans') || nameLower.includes('denim')) keywords.push('denim pants', 'straight leg jeans', 'levis 501');
+      } else if (prod.category === 'Home & Kitchen') {
+        keywords.push('home improvement', 'kitchen utility', 'household product');
+        if (nameLower.includes('vacuum')) keywords.push('cordless vacuum', 'home cleaner', 'dust cleaning');
+        if (nameLower.includes('curtain')) keywords.push('door curtains', 'room darkening', 'home decor');
+        if (nameLower.includes('sheet') || nameLower.includes('pillow')) keywords.push('double bedsheet', 'cotton bedding', 'bedroom comfort');
+      }
+
+      const useCases = [];
+      if (prod.category === 'Electronics') {
+        useCases.push('Daily Productivity', 'Entertainment');
+        if (nameLower.includes('macbook') || nameLower.includes('laptop')) {
+          useCases.push('Software Programming', 'Content Creation', 'Remote Work');
+        }
+        if (nameLower.includes('console') || nameLower.includes('playstation') || nameLower.includes('s24')) {
+          useCases.push('High-Fidelity Gaming', 'Media Streaming');
+        }
+        if (nameLower.includes('headphone')) {
+          useCases.push('Audio Monitoring', 'Focus & Concentration', 'Commuting');
+        }
+        if (nameLower.includes('kindle')) {
+          useCases.push('Digital Reading', 'Studying', 'Travel Reading');
+        }
+      } else if (prod.category === 'Fashion') {
+        useCases.push('Casual Outing', 'Daily Wear');
+        if (nameLower.includes('shoe') || nameLower.includes('trainer')) {
+          useCases.push('Gym Workout', 'Cardio Running', 'Cross Training');
+        }
+        if (nameLower.includes('polo') || nameLower.includes('shirt')) {
+          useCases.push('Semi-Formal Events', 'Sports Play');
+        }
+      } else if (prod.category === 'Home & Kitchen') {
+        useCases.push('Home Organization', 'Daily Household Cleanup');
+        if (nameLower.includes('vacuum')) {
+          useCases.push('Deep Cleaning', 'Car Detailing', 'Pet Hair Removal');
+        }
+        if (nameLower.includes('curtain')) {
+          useCases.push('Sunlight Blocking', 'Bedroom Privacy', 'Thermal Insulation');
+        }
+        if (nameLower.includes('sheet')) {
+          useCases.push('Comfortable Bedding', 'Guest Bedroom Setup');
+        }
+      }
+
+      const pros = [];
+      const cons = [];
+      if (prod.rating >= 4.6) {
+        pros.push('Exceptional high customer ratings');
+      }
+      if (prod.discountPrice > 0) {
+        pros.push('Great discount price and cost savings');
+      }
+      
+      if (prod.category === 'Electronics') {
+        pros.push('Premium build quality & aesthetics');
+        pros.push('Industry-leading hardware performance');
+        cons.push('Premium price tag relative to budget options');
+        cons.push('Requires learning curve or configuration steps');
+      } else if (prod.category === 'Fashion') {
+        pros.push('Extremely comfortable for daily active wear');
+        pros.push('Durable fabrics and brand-name authenticity');
+        cons.push('Sizes may run slightly tight for certain fits');
+        cons.push('Requires careful washing to prevent shrinking');
+      } else if (prod.category === 'Home & Kitchen') {
+        pros.push('Highly functional design matching expectations');
+        pros.push('Made of long-lasting, robust materials');
+        cons.push('Availability can fluctuate in stock levels');
+        cons.push('Requires periodic cleaning or maintenance');
+      } else {
+        pros.push('Solid value for money matching its description');
+        cons.push('Stock levels are limited');
+      }
+
       return {
         name: prod.name,
         brand: prod.brand,
@@ -580,7 +684,12 @@ const seedReal = async () => {
         stock: stock,
         images: prod.images,
         rating: prod.rating,
-        specifications: prod.specifications
+        specifications: prod.specifications,
+        tags,
+        keywords,
+        useCases,
+        pros,
+        cons
       };
     });
 

@@ -1,5 +1,6 @@
 import Product from '../models/Product.js';
 import { uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary.js';
+import { logSearch, logView } from '../services/personalizationService.js';
 
 /**
  * @desc    Get all products with filtering, search, sorting and pagination
@@ -25,6 +26,9 @@ export const getProducts = async (req, res, next) => {
 
     // Keyword text search or regex matching
     if (keyword) {
+      if (req.user) {
+        logSearch(req.user._id, keyword).catch(err => console.error('Error logging search:', err.message));
+      }
       query.$or = [
         { name: { $regex: keyword, $options: 'i' } },
         { brand: { $regex: keyword, $options: 'i' } },
@@ -105,6 +109,9 @@ export const getProductById = async (req, res, next) => {
     const product = await Product.findById(req.params.id);
 
     if (product) {
+      if (req.user) {
+        logView(req.user._id, product._id).catch(err => console.error('Error logging view:', err.message));
+      }
       res.json({ success: true, data: product });
     } else {
       res.status(404);

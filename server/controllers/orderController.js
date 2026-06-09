@@ -2,6 +2,7 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Cart from '../models/Cart.js';
 import Coupon from '../models/Coupon.js';
+import { logPurchase } from '../services/personalizationService.js';
 import { getRazorpayInstance } from '../config/razorpay.js';
 import crypto from 'crypto';
 import {
@@ -135,6 +136,10 @@ export const createOrder = async (req, res, next) => {
 
     // Create the order in the database
     const order = await Order.create(orderData);
+
+    // Log purchased products behavior
+    const purchasedIds = order.products.map(p => p.productId);
+    logPurchase(req.user._id, purchasedIds).catch(err => console.error('Error logging purchase behavior:', err.message));
 
     // Decrement stock levels for both COD and Razorpay initially (we'll re-adjust if Razorpay fails or cancels)
     for (const item of products) {
