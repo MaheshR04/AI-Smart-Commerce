@@ -191,3 +191,7 @@ This codebase has been built with clean modular separation of concerns, providin
 1. **AI Semantic Search**: Set up Mongoose middleware to automatically generate Vector Embeddings on Product creations for semantic relevance search.
 2. **AI Recommendation Engine**: Feed the structured `Reviews`, `Cart`, and `Wishlist` collections data into collaborative filtering models to display personalized recommendations.
 3. **AI Chatbot Shopping Assistant**: An interface hooks setup inside `Navbar.jsx` to mount a conversational chat overlay that acts as a customer helper.
+## 📢 Latest Changes
+
+- **AI Goal-Based Shopping Planner**: Implemented a new `/goal-planner` page with AI‑driven shopping plan generation, preset templates (e.g., Gaming Setup, YouTube Channel), and bulk‑add‑to‑cart functionality.
+- Integrated bulk‑cart addition API (`/api/cart/bulk`) and updated UI to handle package selections.
