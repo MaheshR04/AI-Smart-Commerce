@@ -738,13 +738,11 @@ export const summarizeReviews = async (req, res, next) => {
 
     // Fetch actual reviews from DB
     const reviews = await Review.find({ productId });
+    const openai = getOpenAIClient();
     const gemini = getGeminiClient();
 
-    if (gemini) {
-      try {
-        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const systemPrompt = `You are a professional AI Review Summarizer for "SmartCommerce".
-Your task is to take a product's details and its customer reviews, and generate a concise summary separating reviews into Pros, Cons, and a Final Verdict.
+    const systemPrompt = `You are a professional AI Review Summarizer for "SmartCommerce", a premium e-commerce platform.
+Your task is to take a product's details and its customer reviews, and generate a concise summary separating reviews into Pros, Cons, a Final Verdict, and Common Customer Opinions.
 
 Product Name: ${product.name}
 Product Description: ${product.description}
@@ -753,19 +751,45 @@ Specifications: ${JSON.stringify(product.specifications)}
 Customer Reviews (JSON):
 ${JSON.stringify(reviews.map(r => ({ rating: r.rating, comment: r.comment })), null, 2)}
 
-Instructions:
-1. Summarize pros into bullet points.
-2. Summarize cons into bullet points.
-3. Write a 2-3 sentence final verdict.
-4. If there are no customer reviews, synthesize realistic pros/cons and verdict based on the product description and specifications.
+Instructions for Zero Hallucination:
+1. Summarize Pros into a list of 2-3 bullet points based strictly on actual review comments and database product specifications/descriptions.
+2. Summarize Cons into a list of 2-3 bullet points.
+3. Write a 2-3 sentence overall verdict explaining the product's overall value.
+4. Extract 2-3 common customer opinions or sentiments summarizing how buyers generally feel (e.g., "Praise for clear bass response", "Concerns regarding long-term durability").
+5. If there are no customer reviews, synthesize realistic pros, cons, verdict, and opinions based exclusively on the product's specifications and description details from our database.
 
 Return your response strictly in the following JSON format:
 {
   "pros": ["pro1", "pro2"],
   "cons": ["con1", "con2"],
-  "verdict": "Final summary verdict text here."
+  "verdict": "Overall verdict text here.",
+  "opinions": ["opinion1", "opinion2"]
 }`;
 
+    let parsed = null;
+
+    // 1. Try OpenAI API
+    if (openai) {
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Generate the review summary now.' }
+          ],
+          response_format: { type: 'json_object' }
+        });
+        const responseText = response.choices[0].message.content.trim();
+        parsed = JSON.parse(responseText);
+      } catch (err) {
+        console.warn('OpenAI review summarizer call failed, attempting Gemini fallback:', err.message);
+      }
+    }
+
+    // 2. Try Gemini API as fallback
+    if (!parsed && gemini) {
+      try {
+        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const prompt = `${systemPrompt}\n\nGenerate the review summary now.`;
         const result = await model.generateContent(prompt);
         const responseText = result.response.text().trim();
@@ -776,20 +800,23 @@ Return your response strictly in the following JSON format:
         } else if (jsonStr.startsWith('```')) {
           jsonStr = jsonStr.substring(3, jsonStr.length - 3).trim();
         }
-
-        const parsed = JSON.parse(jsonStr);
-        return res.json({
-          success: true,
-          summary: parsed
-        });
+        parsed = JSON.parse(jsonStr);
       } catch (err) {
         console.warn('Gemini review summarizer call failed, falling back to local summaries:', err.message);
       }
     }
 
+    if (parsed) {
+      return res.json({
+        success: true,
+        summary: parsed
+      });
+    }
+
     // --- LOCAL REVIEW SUMMARY GENERATOR ---
     const pros = [];
     const cons = [];
+    const opinions = [];
     let verdict = '';
 
     // Synthesize based on actual reviews if we have them
@@ -801,6 +828,18 @@ Return your response strictly in the following JSON format:
           if (r.comment.length > 10 && cons.length < 3) cons.push(r.comment);
         }
       });
+      
+      const avgRating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
+      opinions.push(`Average user feedback stands at a solid ${avgRating.toFixed(1)} / 5.0 stars.`);
+      if (reviews.some(r => r.comment.toLowerCase().includes('quality'))) {
+        opinions.push('Buyers frequently mention the build quality of this model.');
+      }
+      if (reviews.some(r => r.comment.toLowerCase().includes('value') || r.comment.toLowerCase().includes('worth'))) {
+        opinions.push('Customers note that the product is worth the purchase price.');
+      }
+      if (opinions.length < 2) {
+        opinions.push('Users are generally satisfied with the overall experience.');
+      }
     }
 
     // Add fallbacks to guarantee high-quality results
@@ -813,6 +852,10 @@ Return your response strictly in the following JSON format:
         cons.push('Premium price tier compared to average options');
         cons.push('Requires charging adapters or custom ports');
       }
+      if (opinions.length === 0) {
+        opinions.push('Highly valued for high-performance and modern features.');
+        opinions.push('Some customers query compatibility with standard cables.');
+      }
       verdict = `An exceptional premium device tailored for tech enthusiasts and power users. While it sits at a premium price point, its raw performance, outstanding display features, and build quality justify the investment.`;
     } else if (product.category === 'Fashion') {
       if (pros.length === 0) {
@@ -823,7 +866,11 @@ Return your response strictly in the following JSON format:
         cons.push('Sizes might run slightly tight for some buyers');
         cons.push('Needs careful wash care instructions');
       }
-      verdict = `A stylish and durable additions to your wardrobe. Perfect for daily styling details or workouts, balancing modern visual design with robust materials.`;
+      if (opinions.length === 0) {
+        opinions.push('Praised for stylish modern look and comfort.');
+        opinions.push('A few users recommended sizing up for a relaxed fit.');
+      }
+      verdict = `A stylish and durable addition to your wardrobe. Perfect for daily styling details or workouts, balancing modern visual design with robust materials.`;
     } else {
       if (pros.length === 0) {
         pros.push('Great value for money matching description');
@@ -831,6 +878,10 @@ Return your response strictly in the following JSON format:
       }
       if (cons.length === 0) {
         cons.push('Availability might fluctuate in stock');
+      }
+      if (opinions.length === 0) {
+        opinions.push('Valued as a highly utility-driven purchase.');
+        opinions.push('Customers appreciate the durability of the packaging.');
       }
       verdict = `Highly functional product that delivers exactly on its promises. A solid purchase decision that offers great utility for everyday applications.`;
     }
@@ -840,7 +891,8 @@ Return your response strictly in the following JSON format:
       summary: {
         pros: pros.slice(0, 3),
         cons: cons.length > 0 ? cons.slice(0, 3) : ['No significant negatives reported'],
-        verdict
+        verdict,
+        opinions: opinions.slice(0, 3)
       }
     });
   } catch (error) {

@@ -5,7 +5,7 @@ import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import ReviewSection from '../components/ReviewSection';
 import ProductCard from '../components/ProductCard';
-import { Heart, ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronLeft, Eye, Sparkles, Share2, Scale } from 'lucide-react';
+import { Heart, ShoppingCart, Star, ShieldCheck, Truck, RefreshCw, ChevronLeft, Eye, Sparkles, Share2, Scale, MessageSquare } from 'lucide-react';
 import { ToastContext } from '../context/ToastContext';
 import API from '../services/api';
 
@@ -558,12 +558,35 @@ export const ProductDetails = () => {
             </div>
           </div>
 
-          {/* AI Verdict */}
-          <div className="bg-white/60 dark:bg-slate-900/40 p-4 rounded-2xl border border-indigo-50/50 dark:border-slate-750">
-            <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Final Verdict</h5>
-            <p className="text-xs text-slate-700 dark:text-slate-355 mt-1 leading-relaxed italic">
-              "{reviewSummary.verdict}"
-            </p>
+          {/* Verdict and Opinions grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* AI Verdict */}
+            <div className="bg-white/60 dark:bg-slate-900/40 p-4 rounded-2xl border border-indigo-50/50 dark:border-slate-750 flex flex-col justify-between">
+              <div>
+                <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Overall Verdict</h5>
+                <p className="text-xs text-slate-755 dark:text-slate-300 mt-1.5 leading-relaxed italic">
+                  "{reviewSummary.verdict}"
+                </p>
+              </div>
+            </div>
+
+            {/* Common customer opinions */}
+            {reviewSummary.opinions && reviewSummary.opinions.length > 0 && (
+              <div className="bg-white/60 dark:bg-slate-900/40 p-4 rounded-2xl border border-indigo-50/50 dark:border-slate-750">
+                <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-sky-500" />
+                  Common Customer Opinions
+                </h5>
+                <ul className="space-y-1.5 mt-2">
+                  {reviewSummary.opinions.map((opinion, idx) => (
+                    <li key={idx} className="text-xs text-slate-650 dark:text-slate-350 flex items-start gap-2">
+                      <span className="text-sky-500 font-bold mt-0.5">•</span>
+                      <span>{opinion}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </section>
       ) : null}
