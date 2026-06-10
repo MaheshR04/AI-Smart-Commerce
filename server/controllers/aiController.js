@@ -913,30 +913,53 @@ export const planGoalSetup = async (req, res, next) => {
     }
 
     const dbProducts = await getAllProductsSummary();
+    const openai = getOpenAIClient();
     const gemini = getGeminiClient();
 
-    if (gemini) {
-      try {
-        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const systemPrompt = `You are a premium AI Goal-Based Shopping Planner for "SmartCommerce".
+    const systemPrompt = `You are a premium AI Goal-Based Shopping Planner for "SmartCommerce", a premium e-commerce platform.
 Your task is to take a user's shopping goal (like "Build Gaming Setup", "Start YouTube Channel", "Home Gym Setup", "Programming Setup") and recommend a bundle of products from our catalog.
 
 Here is our complete active product catalog (JSON format):
 ${JSON.stringify(dbProducts, null, 2)}
 
-Instructions:
-1. Recommending items: Recommend only from the catalog list above. Select 2 to 4 products that logically fit the goal.
-2. Direct reasons: For each recommended product, write a brief, compelling 1-2 sentence reason explaining why it fits this goal.
-3. Response formatting: Return your response strictly in the following JSON format:
+Instructions for Zero Hallucination:
+1. Recommending items: Recommend only from the catalog list above. Select 2 to 4 products that logically fit the goal. Do NOT invent new products or details.
+2. Budget Allocation: Check if a budget limit is mentioned in the goal query (e.g. "under ₹80,000" or "budget of 1 lakh"). If so, allocate budget intelligently across products: select a subset of products whose combined total price (using their active discountPrice or price) does not exceed this limit.
+3. Direct reasons: For each recommended product, write a brief, compelling 1-2 sentence reason explaining why it fits this goal and fits the budget.
+4. Response formatting: Return your response strictly in the following JSON format:
 {
   "goalName": "The goal name formatted nicely",
-  "intro": "A 2-3 sentence overview explaining how this setup bundle solves the user's goal.",
+  "intro": "A 2-3 sentence overview explaining how this setup bundle solves the user's goal under the specified budget.",
   "bundleRecommendations": [
-    { "productId": "productIdStr", "reason": "Reason why it fits the goal" }
+    { "productId": "productIdStr", "reason": "Reason why it fits the goal and fits the budget" }
   ]
 }
 Make sure to escape control characters in strings for valid JSON parsing.`;
 
+    let parsed = null;
+
+    // 1. Try OpenAI API
+    if (openai) {
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `Generate the shopping plan for: "${goal}"` }
+          ],
+          response_format: { type: 'json_object' }
+        });
+        const responseText = response.choices[0].message.content.trim();
+        parsed = JSON.parse(responseText);
+      } catch (err) {
+        console.warn('OpenAI Goal Planner call failed, attempting Gemini fallback:', err.message);
+      }
+    }
+
+    // 2. Try Gemini API as fallback
+    if (!parsed && gemini) {
+      try {
+        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const prompt = `${systemPrompt}\n\nUser Goal: "${goal}"`;
         const result = await model.generateContent(prompt);
         const responseText = result.response.text().trim();
@@ -947,30 +970,30 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
         } else if (jsonStr.startsWith('```')) {
           jsonStr = jsonStr.substring(3, jsonStr.length - 3).trim();
         }
-
-        const parsed = JSON.parse(jsonStr);
-
-        // Populate the full product objects for the bundle
-        const ids = parsed.bundleRecommendations.map(item => item.productId);
-        const products = await Product.find({ _id: { $in: ids } });
-
-        const mappedRecommendations = parsed.bundleRecommendations.map(item => {
-          const matchedProd = products.find(p => p._id.toString() === item.productId);
-          return {
-            product: matchedProd,
-            reason: item.reason
-          };
-        }).filter(item => item.product);
-
-        return res.json({
-          success: true,
-          goalName: parsed.goalName,
-          intro: parsed.intro,
-          recommendations: mappedRecommendations
-        });
+        parsed = JSON.parse(jsonStr);
       } catch (err) {
         console.warn('Gemini Goal Planner call failed, falling back to local planner matching engine:', err.message);
       }
+    }
+
+    if (parsed) {
+      const ids = parsed.bundleRecommendations.map(item => item.productId);
+      const products = await Product.find({ _id: { $in: ids } });
+
+      const mappedRecommendations = parsed.bundleRecommendations.map(item => {
+        const matchedProd = products.find(p => p._id.toString() === item.productId);
+        return {
+          product: matchedProd,
+          reason: item.reason
+        };
+      }).filter(item => item.product);
+
+      return res.json({
+        success: true,
+        goalName: parsed.goalName,
+        intro: parsed.intro,
+        recommendations: mappedRecommendations
+      });
     }
 
     // --- LOCAL GOAL PLANNER FALLBACK ---
@@ -979,59 +1002,115 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
     let recommendations = [];
     const lower = goal.toLowerCase();
 
+    // Parse budget limit from goal
+    let maxPriceLimit = null;
+    const priceMatches = lower.match(/(?:under|below|less than|max|budget of|within)\s*(?:rs\.?|inr|₹)?\s*([\d,]+)/i);
+    if (priceMatches) {
+      maxPriceLimit = Number(priceMatches[1].replace(/,/g, ''));
+    } else {
+      const kMatches = lower.match(/(?:under|below|less than|max|budget of|within)?\s*(\d+)\s*k/i);
+      if (kMatches) {
+        maxPriceLimit = Number(kMatches[1]) * 1000;
+      }
+    }
+
+    let candidates = [];
+
     if (lower.includes('gaming') || lower.includes('playstation') || lower.includes('game')) {
-      goalName = 'Build Premium Gaming Setup';
-      intro = 'Create the ultimate home gaming station with a next-generation console, high-performance visual processing, and top-tier active noise-cancelling acoustics.';
+      goalName = maxPriceLimit ? `Gaming Setup under ₹${maxPriceLimit.toLocaleString('en-IN')}` : 'Build Premium Gaming Setup';
+      intro = 'Create your home gaming station with next-generation console systems, active noise-cancelling acoustics, and smooth mobile gaming interfaces.';
       
       const ps5 = await Product.findOne({ name: /playstation/i });
-      const sonyHeadphones = await Product.findOne({ name: /wh-1000xm5/i });
       const s24 = await Product.findOne({ name: /s24 ultra/i });
+      const sonyHeadphones = await Product.findOne({ name: /wh-1000xm5/i });
+      const vivo = await Product.findOne({ name: /Vivo T3x/i });
+      const airdopes = await Product.findOne({ name: /Airdopes 141/i });
 
-      if (ps5) recommendations.push({ product: ps5, reason: 'The central hub of your gaming setup, delivering blazing-fast loading speeds and 4K ray-traced visuals.' });
-      if (sonyHeadphones) recommendations.push({ product: sonyHeadphones, reason: 'Provides industry-leading active noise cancellation for complete immersion in game soundscapes.' });
-      if (s24) recommendations.push({ product: s24, reason: 'Perfect secondary display and companion controller for console sync apps and high-fidelity mobile gaming.' });
-    } 
-    else if (lower.includes('youtube') || lower.includes('video') || lower.includes('vlog') || lower.includes('channel')) {
-      goalName = 'Start Professional YouTube Channel';
-      intro = 'Kickstart your content creation journey with ultra-high resolution recording hardware, an advanced editing studio setup, and high-fidelity sound monitoring.';
+      if (ps5) candidates.push({ product: ps5, reason: 'The central hub of your gaming setup, delivering blazing-fast loading speeds and 4K ray-traced visuals.' });
+      if (s24) candidates.push({ product: s24, reason: 'High-end gaming smartphone with Snapdragon 8 Gen 3 for gaming excellence.' });
+      if (sonyHeadphones) candidates.push({ product: sonyHeadphones, reason: 'Provides industry-leading active noise cancellation for complete immersion in game soundscapes.' });
+      if (vivo) candidates.push({ product: vivo, reason: 'Budget-friendly gaming smartphone with Snapdragon 6 Gen 1 and 120Hz display.' });
+      if (airdopes) candidates.push({ product: airdopes, reason: 'Ultra-low latency BEAST Mode true wireless earbuds for lag-free gaming sessions.' });
+
+    } else if (lower.includes('youtube') || lower.includes('video') || lower.includes('vlog') || lower.includes('channel')) {
+      goalName = maxPriceLimit ? `YouTube Starter Setup under ₹${maxPriceLimit.toLocaleString('en-IN')}` : 'Start Professional YouTube Channel';
+      intro = 'Kickstart your content creation journey with high definition recording drones, video editing powerhouses, and noise isolation monitoring.';
       
       const drone = await Product.findOne({ name: /dji mini/i });
       const macbook = await Product.findOne({ name: /macbook pro/i });
       const sonyHeadphones = await Product.findOne({ name: /wh-1000xm5/i });
+      const nord = await Product.findOne({ name: /Nord CE4/i });
+      const airdopes = await Product.findOne({ name: /Airdopes 141/i });
 
-      if (drone) recommendations.push({ product: drone, reason: 'Enables high-definition 4K aerial shots and professional cinematic angles to elevate production values.' });
-      if (macbook) recommendations.push({ product: macbook, reason: 'A video editing powerhouse equipped with Apple silicon to render complex Timelines without frame drops.' });
-      if (sonyHeadphones) recommendations.push({ product: sonyHeadphones, reason: 'Allows precise audio editing, noise monitoring, and vocal leveling with premium acoustics.' });
-    } 
-    else if (lower.includes('gym') || lower.includes('workout') || lower.includes('fitness') || lower.includes('health')) {
-      goalName = 'Home Gym & Fitness Setup';
-      intro = 'Optimize your home workout area with heavy-duty training footwear, high-comfort athletic wear, and smart cleaning tools to maintain a hygienic environment.';
+      if (drone) candidates.push({ product: drone, reason: 'Enables high-definition 4K aerial shots and professional cinematic angles to elevate production values.' });
+      if (macbook) candidates.push({ product: macbook, reason: 'A video editing powerhouse equipped with Apple silicon to render complex Timelines without frame drops.' });
+      if (sonyHeadphones) candidates.push({ product: sonyHeadphones, reason: 'Allows precise audio editing, noise monitoring, and vocal leveling with premium acoustics.' });
+      if (nord) candidates.push({ product: nord, reason: 'Mid-range device with a 50MP Sony AI camera with OIS to capture vlog shots.' });
+      if (airdopes) candidates.push({ product: airdopes, reason: 'Compact dual-mic earbuds to monitor playback tracks on the go.' });
+
+    } else if (lower.includes('gym') || lower.includes('workout') || lower.includes('fitness') || lower.includes('health') || lower.includes('running')) {
+      goalName = maxPriceLimit ? `Home Gym Setup under ₹${maxPriceLimit.toLocaleString('en-IN')}` : 'Home Gym & Fitness Setup';
+      intro = 'Optimize your home workout area with heavy-duty training footwear, high-comfort athletic wear, and smart cleaning tools.';
       
       const nike = await Product.findOne({ name: /alpha trainer/i });
       const adidas = await Product.findOne({ name: /ultraboost/i });
       const dyson = await Product.findOne({ name: /dyson v15/i });
+      const lykos = await Product.findOne({ name: /Lykos/i });
+      const helmet = await Product.findOne({ name: /Vega/i });
 
-      if (nike) recommendations.push({ product: nike, reason: 'Features a flat, supportive rubber base designed specifically for high-impact lifts and training stability.' });
-      if (adidas) recommendations.push({ product: adidas, reason: 'Provides cloud-like boost cushioning for long-distance runs and high-intensity cardio exercises.' });
-      if (dyson) recommendations.push({ product: dyson, reason: 'Ensures your home gym remains clean, hygienic, and free of dust or pet dander with laser-assisted suction.' });
-    } 
-    else {
-      // Default / Programming setup fallback
+      if (nike) candidates.push({ product: nike, reason: 'Features a flat, supportive rubber base designed specifically for high-impact lifts and training stability.' });
+      if (adidas) candidates.push({ product: adidas, reason: 'Provides cloud-like boost cushioning for long-distance runs and high-intensity cardio exercises.' });
+      if (dyson) candidates.push({ product: dyson, reason: 'Ensures your home gym remains clean, hygienic, and free of dust or pet dander with laser-assisted suction.' });
+      if (lykos) candidates.push({ product: lykos, reason: 'Compact portable vacuum cleaner for quick wipe-downs of workout mats and fitness benches.' });
+      if (helmet) candidates.push({ product: helmet, reason: 'Ride in safety during outdoor cycling workouts with high-impact ISI shell certification.' });
+
+    } else {
       goalName = lower.includes('program') || lower.includes('code') || lower.includes('developer') 
-        ? 'Professional Software Programming Setup' 
+        ? (maxPriceLimit ? `Programming Setup under ₹${maxPriceLimit.toLocaleString('en-IN')}` : 'Professional Software Programming Setup')
         : `Shopping Plan for: ${goal}`;
       intro = 'Build a high-efficiency development workflow with processing power built for compilation tasks, noise isolation, and productivity habits.';
 
       const macbook = await Product.findOne({ name: /macbook pro/i });
       const sonyHeadphones = await Product.findOne({ name: /wh-1000xm5/i });
       const habits = await Product.findOne({ name: /atomic habits/i });
+      const nord = await Product.findOne({ name: /Nord CE4/i });
+      const airdopes = await Product.findOne({ name: /Airdopes 141/i });
 
-      if (macbook) recommendations.push({ product: macbook, reason: 'Executes compilation pipelines, Docker containers, and local dev servers with blazing efficiency.' });
-      if (sonyHeadphones) recommendations.push({ product: sonyHeadphones, reason: 'Creates a quiet, focused development zone to help you reach a state of flow while writing code.' });
-      if (habits) recommendations.push({ product: habits, reason: 'Learn James Clear\'s proven guidelines to form deep work habits and structured learning routines.' });
+      if (macbook) candidates.push({ product: macbook, reason: 'Executes compilation pipelines, Docker containers, and local dev servers with blazing efficiency.' });
+      if (sonyHeadphones) candidates.push({ product: sonyHeadphones, reason: 'Creates a quiet, focused development zone to help you reach a state of flow while writing code.' });
+      if (nord) candidates.push({ product: nord, reason: 'Responsive mobile companion testbed for developers with Snapdragon 5G connectivity.' });
+      if (airdopes) candidates.push({ product: airdopes, reason: 'Affordable wireless earbuds to join standups and conferences.' });
+      if (habits) candidates.push({ product: habits, reason: 'Learn James Clear\'s proven guidelines to form deep work habits and structured learning routines.' });
     }
 
-    // Fallback if DB query was empty
+    // Allocate budget greedily according to priority candidates
+    if (maxPriceLimit) {
+      let currentSum = 0;
+      for (const cand of candidates) {
+        const activePrice = cand.product.discountPrice > 0 ? cand.product.discountPrice : cand.product.price;
+        if (currentSum + activePrice <= maxPriceLimit) {
+          recommendations.push(cand);
+          currentSum += activePrice;
+        }
+      }
+
+      // If budget is extremely tight and nothing fits, pick the single cheapest candidate
+      if (recommendations.length === 0 && candidates.length > 0) {
+        let cheapest = candidates[0];
+        let cheapestPrice = cheapest.product.discountPrice > 0 ? cheapest.product.discountPrice : cheapest.product.price;
+        for (const cand of candidates) {
+          const activePrice = cand.product.discountPrice > 0 ? cand.product.discountPrice : cand.product.price;
+          if (activePrice < cheapestPrice) {
+            cheapest = cand;
+            cheapestPrice = activePrice;
+          }
+        }
+        recommendations.push(cheapest);
+      }
+    } else {
+      recommendations = candidates.slice(0, 3);
+    }
+
     if (recommendations.length === 0) {
       const fallbackProds = await Product.find({}).limit(2);
       fallbackProds.forEach(p => {
