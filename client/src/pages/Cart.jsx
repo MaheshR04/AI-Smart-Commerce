@@ -1,8 +1,9 @@
-import { useContext } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { ShopContext } from '../context/ShopContext';
-import { Trash2, ShoppingBag, ChevronRight, ArrowLeft, Heart } from 'lucide-react';
+import { Trash2, ShoppingBag, ChevronRight, ArrowLeft, Heart, Sparkles, Plus } from 'lucide-react';
+import API from '../services/api';
 
 export const Cart = () => {
   const {
@@ -17,6 +18,41 @@ export const Cart = () => {
   const { wishlist, toggleWishlist } = useContext(ShopContext);
 
   const navigate = useNavigate();
+
+  const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!cart?.products || cart.products.length === 0) {
+        setSuggestions([]);
+        return;
+      }
+      
+      const productIds = cart.products
+        .map(item => item.productId?._id)
+        .filter(Boolean);
+        
+      if (productIds.length === 0) {
+        setSuggestions([]);
+        return;
+      }
+
+      setLoadingSuggestions(true);
+      try {
+        const response = await API.post('/ai/cart-suggestions', { productIds });
+        if (response.data && response.data.success) {
+          setSuggestions(response.data.suggestions);
+        }
+      } catch (err) {
+        console.error('Failed to load cart suggestions:', err);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    fetchSuggestions();
+  }, [cart?.products]);
 
   const cartTotal = getCartTotal();
   const cartItemsCount = cart?.products?.length || 0;
@@ -238,6 +274,71 @@ export const Cart = () => {
                           </button>
                         </div>
 
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Smart Cart Add-ons */}
+            {suggestions.length > 0 && (
+              <div className="bg-gradient-to-tr from-sky-50/50 to-indigo-50/50 border border-sky-100/60 rounded-3xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="bg-sky-100 dark:bg-sky-950/40 p-2 rounded-xl text-sky-600 dark:text-sky-400">
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1">
+                      Smart Cart Add-ons
+                    </h3>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Frequently bought together with the items in your cart</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {suggestions.map((suggestion) => {
+                    const { product, reason } = suggestion;
+                    const { _id, name, brand, images, price, discountPrice } = product;
+                    const activePrice = discountPrice > 0 ? discountPrice : price;
+
+                    return (
+                      <div key={_id} className="bg-white dark:bg-slate-850 border border-slate-200/50 dark:border-slate-800 hover:border-sky-200/70 dark:hover:border-sky-850 rounded-2xl p-4 transition-all duration-300 hover:shadow-sm flex flex-col justify-between gap-3 group">
+                        <div className="flex gap-3">
+                          <Link to={`/products/${_id}`} className="aspect-square w-16 rounded-xl overflow-hidden border border-slate-150 dark:border-slate-750 bg-slate-50 dark:bg-slate-900 flex-shrink-0">
+                            <img src={images[0]} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-350" />
+                          </Link>
+                          
+                          <div className="space-y-1 min-w-0">
+                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{brand}</span>
+                            <Link to={`/products/${_id}`} className="block">
+                              <h4 className="text-xs font-bold text-slate-800 dark:text-white hover:text-sky-600 dark:hover:text-sky-400 transition-colors line-clamp-1 leading-tight">
+                                {name}
+                              </h4>
+                            </Link>
+                            <div className="flex items-baseline gap-1.5 pt-0.5">
+                              <span className="text-xs font-extrabold text-slate-850 dark:text-slate-200">₹{activePrice.toLocaleString('en-IN')}</span>
+                              {discountPrice > 0 && (
+                                <span className="text-[9px] text-slate-400 dark:text-slate-550 line-through">₹{price.toLocaleString('en-IN')}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* AI Reason banner */}
+                        <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-105 dark:border-slate-800 p-3 rounded-xl flex items-start gap-2">
+                          <Sparkles className="w-3.5 h-3.5 text-sky-500 flex-shrink-0 mt-0.5" />
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed italic">
+                            "{reason}"
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => addToCart(_id, 1, product)}
+                          className="w-full py-2 bg-sky-50 dark:bg-sky-950/20 hover:bg-sky-500 hover:text-white border border-sky-100/50 dark:border-sky-900/45 hover:border-sky-500 text-sky-600 dark:text-sky-400 hover:dark:text-white text-[10px] font-bold uppercase tracking-wider rounded-xl flex items-center justify-center gap-1 transition-all duration-200 active:scale-[0.98] cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" /> Add Accessory
+                        </button>
                       </div>
                     );
                   })}

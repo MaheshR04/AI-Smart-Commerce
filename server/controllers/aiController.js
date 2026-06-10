@@ -1128,3 +1128,232 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
     next(error);
   }
 };
+
+/**
+ * @desc    AI Smart Cart Assistant Suggestions
+ * @route   POST /api/ai/cart-suggestions
+ * @access  Public
+ */
+export const getCartSuggestions = async (req, res, next) => {
+  try {
+    const { productIds } = req.body;
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return res.json({ success: true, suggestions: [] });
+    }
+
+    // Fetch active products in the cart
+    const cartProducts = await Product.find({ _id: { $in: productIds } });
+    if (cartProducts.length === 0) {
+      return res.json({ success: true, suggestions: [] });
+    }
+
+    const allDbProducts = await getAllProductsSummary();
+    const openai = getOpenAIClient();
+    const gemini = getGeminiClient();
+
+    // Prepare system prompt for LLM
+    const systemPrompt = `You are a premium AI Smart Cart Assistant for "SmartCommerce", a premium e-commerce platform.
+Your task is to analyze the items currently in the user's cart and suggest 1 to 3 relevant accessories or complementary products from our active catalog.
+
+Here are the items currently in the user's cart (JSON):
+${JSON.stringify(cartProducts.map(p => ({ id: p._id.toString(), name: p.name, category: p.category })), null, 2)}
+
+Here is our complete active product catalog (JSON):
+${JSON.stringify(allDbProducts, null, 2)}
+
+Instructions for Zero Hallucination and Relevancy:
+1. Recommending items: Recommend only from the active product catalog list above. Do NOT invent new products or details.
+2. Avoid random upselling: Suggest ONLY highly relevant accessories or complementary products. Do NOT suggest random items. Follow these matching rules:
+   - If the cart has a Laptop -> Suggest noise isolation headphones (Sony WH-1000XM5) or a focus/productivity book (Atomic Habits).
+   - If the cart has a Phone -> Suggest wireless earbuds/neckbands (boAt Rockerz 255 or boAt Airdopes 141).
+   - If the cart has a gaming Console (PS5) -> Suggest gaming headphones/earbuds (Sony WH-1000XM5 or boAt Airdopes 141).
+   - If the cart has Sports shoes -> Suggest a sweat-resistant sports neckband (boAt Rockerz 255).
+   - If the cart has Bedding/Bedsheet -> Suggest room-darkening curtains (D'Decor Curtains).
+   - If the cart has a Car care kit -> Suggest a car vacuum cleaner (Lykos Vacuum).
+3. Do NOT recommend any product that is already inside the user's cart.
+4. For each suggestion, provide a clear, helpful 1-2 sentence reason explaining why this specific accessory or complement is recommended.
+
+Return your response strictly in the following JSON format:
+{
+  "suggestions": [
+    { "productId": "productIdStr", "reason": "Reason why it is a great complement to the items in their cart" }
+  ]
+}
+Make sure to escape control characters in strings for valid JSON parsing.`;
+
+    let parsed = null;
+
+    // 1. Try OpenAI API
+    if (openai) {
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Generate the cart suggestions now.' }
+          ],
+          response_format: { type: 'json_object' }
+        });
+        const responseText = response.choices[0].message.content.trim();
+        parsed = JSON.parse(responseText);
+      } catch (err) {
+        console.warn('OpenAI Cart Suggestions call failed, attempting Gemini fallback:', err.message);
+      }
+    }
+
+    // 2. Try Gemini API as fallback
+    if (!parsed && gemini) {
+      try {
+        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const prompt = `${systemPrompt}\n\nGenerate the cart suggestions now.`;
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text().trim();
+        
+        let jsonStr = responseText;
+        if (jsonStr.startsWith('```json')) {
+          jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
+        } else if (jsonStr.startsWith('```')) {
+          jsonStr = jsonStr.substring(3, jsonStr.length - 3).trim();
+        }
+        parsed = JSON.parse(jsonStr);
+      } catch (err) {
+        console.warn('Gemini Cart Suggestions call failed, falling back to local suggestion engine:', err.message);
+      }
+    }
+
+    // If API succeeded and suggestions are present
+    if (parsed && parsed.suggestions && Array.isArray(parsed.suggestions)) {
+      const ids = parsed.suggestions.map(s => s.productId);
+      const dbSuggestedProducts = await Product.find({ _id: { $in: ids } });
+
+      const finalSuggestions = parsed.suggestions.map(s => {
+        const matched = dbSuggestedProducts.find(p => p._id.toString() === s.productId);
+        if (matched && !productIds.includes(s.productId)) {
+          return {
+            product: matched,
+            reason: s.reason
+          };
+        }
+        return null;
+      }).filter(Boolean);
+
+      return res.json({
+        success: true,
+        suggestions: finalSuggestions
+      });
+    }
+
+    // --- LOCAL DYNAMIC FALLBACK SUGGESTIONS ENGINE ---
+    const localSuggestions = [];
+    const cartIds = cartProducts.map(p => p._id.toString());
+
+    // Fetch helper products from database to ensure they are available
+    const sonyHeadphones = await Product.findOne({ name: /wh-1000xm5/i });
+    const atomicHabits = await Product.findOne({ name: /atomic habits/i });
+    const boatNeckband = await Product.findOne({ name: /Rockerz 255/i });
+    const boatEarbuds = await Product.findOne({ name: /Airdopes 141/i });
+    const curtains = await Product.findOne({ name: /D'Decor/i });
+    const carVacuum = await Product.findOne({ name: /Lykos/i });
+
+    for (const prod of cartProducts) {
+      const nameLower = prod.name.toLowerCase();
+
+      // Laptop Rule
+      if (nameLower.includes('laptop') || nameLower.includes('macbook')) {
+        if (sonyHeadphones && !cartIds.includes(sonyHeadphones._id.toString())) {
+          localSuggestions.push({
+            product: sonyHeadphones,
+            reason: 'Stay in your zone with industry-leading active noise cancellation for coding or writing.'
+          });
+        }
+        if (atomicHabits && !cartIds.includes(atomicHabits._id.toString())) {
+          localSuggestions.push({
+            product: atomicHabits,
+            reason: 'Form positive habits and optimize your daily workspace routine alongside your laptop.'
+          });
+        }
+      }
+
+      // Phone Rule
+      if (nameLower.includes('phone') || nameLower.includes('galaxy s24') || nameLower.includes('oneplus') || nameLower.includes('iqoo') || nameLower.includes('vivo')) {
+        if (boatEarbuds && !cartIds.includes(boatEarbuds._id.toString())) {
+          localSuggestions.push({
+            product: boatEarbuds,
+            reason: 'Enjoy low-latency audio and clear hands-free calls with these true wireless earbuds.'
+          });
+        }
+        if (boatNeckband && !cartIds.includes(boatNeckband._id.toString())) {
+          localSuggestions.push({
+            product: boatNeckband,
+            reason: 'A reliable, sweat-resistant Bluetooth neckband for calls, workouts, and daily commutes.'
+          });
+        }
+      }
+
+      // Console Rule
+      if (nameLower.includes('console') || nameLower.includes('playstation') || nameLower.includes('ps5')) {
+        if (sonyHeadphones && !cartIds.includes(sonyHeadphones._id.toString())) {
+          localSuggestions.push({
+            product: sonyHeadphones,
+            reason: 'Immersive soundscapes and noise cancellation to experience high-fidelity game audio.'
+          });
+        }
+        if (boatEarbuds && !cartIds.includes(boatEarbuds._id.toString())) {
+          localSuggestions.push({
+            product: boatEarbuds,
+            reason: 'Features BEAST Mode low-latency audio transmission for crisp gaming sound effects.'
+          });
+        }
+      }
+
+      // Shoes Rule
+      if (nameLower.includes('shoe') || nameLower.includes('trainer') || nameLower.includes('ultraboost') || nameLower.includes('nike') || nameLower.includes('adidas')) {
+        if (boatNeckband && !cartIds.includes(boatNeckband._id.toString())) {
+          localSuggestions.push({
+            product: boatNeckband,
+            reason: 'Sweat-resistant, secure-fit neckband to fuel your training sessions and outdoor runs.'
+          });
+        }
+      }
+
+      // Bedsheet Rule
+      if (nameLower.includes('bedsheet') || nameLower.includes('solimo')) {
+        if (curtains && !cartIds.includes(curtains._id.toString())) {
+          localSuggestions.push({
+            product: curtains,
+            reason: 'Complete your bedroom aesthetics with matching room darkening curtains to ensure better sleep.'
+          });
+        }
+      }
+
+      // Car Kit Rule
+      if (nameLower.includes('car care') || nameLower.includes('3m auto')) {
+        if (carVacuum && !cartIds.includes(carVacuum._id.toString())) {
+          localSuggestions.push({
+            product: carVacuum,
+            reason: 'High-power portable vacuum cleaner to clean hard-to-reach vehicle spots alongside your car care kit.'
+          });
+        }
+      }
+    }
+
+    // Remove duplicates based on product ID
+    const uniqueSuggestions = [];
+    const seenIds = new Set();
+    localSuggestions.forEach(s => {
+      const pId = s.product._id.toString();
+      if (!seenIds.has(pId) && !productIds.includes(pId)) {
+        seenIds.add(pId);
+        uniqueSuggestions.push(s);
+      }
+    });
+
+    return res.json({
+      success: true,
+      suggestions: uniqueSuggestions.slice(0, 3)
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
