@@ -123,15 +123,22 @@ Instructions:
      * **Extracted Budget:** <budget limit or N/A>
      * **Extracted Use Case:** <intended use case or N/A>
      * **Extracted Preferences:** <extracted preferences like brands, size, specs or N/A>
-   - Then, introduce your recommendation.
-   - For every recommended product, you MUST include:
+   - Then, introduce your recommendation or comparison.
+   - For standard recommendation requests, for every recommended product you MUST include:
      * Brand, specifications, active price (use discount price if > 0).
      * **Why Recommended:** <detailed explanation of why this product fits their query/needs>
      * **Best Use Case:** <specific best use case scenario for this product>
      * **Value for Money Score:** <score>/10 (evaluated based on the product features and pricing)
-3. User intent: Tailor choices to match the user's favorite brands, favorite categories, budget constraints, and explicit interests when appropriate.
-4. Response formatting: Use clear, beautifully structured markdown with bullet points.
-5. In your response JSON, also return a structured list of recommended product IDs in the "recommendations" array.
+3. Product Comparison: If the user asks to compare specific products (e.g. 'Compare iPhone 15 and Samsung Galaxy S25') or asks comparative questions (e.g. 'Which is better for gaming?'):
+   - Check if requested products exist in our database. Since iPhone 15 and Samsung Galaxy S25 are NOT in the catalog database list, explicitly state that they are not available in our store catalog, then suggest the closest available database alternatives (like Samsung Galaxy S24 Ultra, OnePlus Nord CE4 Lite, iQOO Z9 Lite, or Vivo T3x 5G) and compare those. Never invent details or specifications for nonexistent products.
+   - For products in our database, generate a detailed comparison featuring:
+     * **Feature Comparison:** Compare their key specifications (like Processor, RAM, Storage, Battery Life, etc.) side-by-side in a formatted markdown table.
+     * **Pros & Cons:** Bullet lists representing Pros and Cons of each compared product based strictly on database values.
+     * **Recommendation Verdict:** Explain which product is recommended for what specific usage profile (e.g. gaming, budget choice).
+   - Return the compared product IDs in the "recommendations" array so their product cards display.
+4. User intent: Tailor choices to match the user's favorite brands, favorite categories, budget constraints, and explicit interests when appropriate.
+5. Response formatting: Use clear, beautifully structured markdown with bullet points.
+6. In your response JSON, also return a structured list of recommended product IDs in the "recommendations" array.
 
 Return your response strictly in the following JSON format:
 {
@@ -309,9 +316,161 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
       extractedUseCase = 'Athletic & Fitness Training';
     }
 
-    // Formulate a beautiful markdown response based on query
+    // Check if comparison query locally
+    const isComparison = lower.match(/(compare|versus|vs|difference|which is better|which one is better|which is best|which one is best|better for)/i);
     let reply = '';
-    if (recommended.length > 0) {
+
+    if (isComparison) {
+      // Look for explicit product matches
+      let comparedProducts = [];
+      let noteText = "";
+
+      const stopWords = ['for', 'and', 'the', 'with', 'from', 'out', 'your', 'that', 'this', 'about', 'dry', 'very', 'skin', 'cream', 'hair', 'suit', 'item', 'kit', 'original', 'double', 'single', 'pack', 'size', 'inch', 'core', 'ram', 'ssd', 'gb', 'tb', 'wireless', 'bluetooth', 'portable', 'darkening', 'room', 'door', 'home', 'house', 'active', 'noise', 'cancelling', 'smart', 'cleaner', 'vacuum', 'cooker', 'fryer', 'digital', 'auto', 'special', 'car', 'care', 'water', 'resistant', 'playtime', 'hours', 'battery', 'charger', 'charging', 'processor', 'display', 'screen', 'camera', 'resolution', 'fps', 'refresh', 'rate', 'hz', 'audio', 'sound', 'speaker', 'headphone', 'earbud', 'earphone', 'microphone', 'jack', 'port', 'connectivity', 'connection', 'weight', 'dimensions', 'material', 'fabric', 'cotton', 'polyester', 'wood', 'steel', 'metal', 'plastic', 'leather', 'rubber', 'silicone', 'glass', 'ceramic', 'color', 'black', 'white', 'gray', 'silver', 'gold', 'blue', 'red', 'green', 'yellow', 'pink', 'orange', 'purple', 'brown', 'beige', 'clear', 'transparent', 'matte', 'glossy', 'dull', 'shiny', 'light', 'dark', 'bright', 'warm', 'cool', 'natural', 'artificial'];
+      const matchedMap = new Map();
+      dbProducts.forEach(p => {
+        const nameWords = p.name.toLowerCase().split(/[\s,()\-+]+/);
+        const brand = p.brand.toLowerCase();
+        
+        let matchScore = 0;
+        if (lower.includes(brand)) {
+          matchScore += 2;
+        }
+        nameWords.forEach(w => {
+          if (w.length > 2 && !stopWords.includes(w)) {
+            if (lower.includes(w)) {
+              matchScore += 5;
+            }
+          }
+        });
+        
+        if (matchScore > 0) {
+          matchedMap.set(p.id, { product: p, score: matchScore });
+        }
+      });
+
+      const sortedMatches = [...matchedMap.values()].sort((a, b) => b.score - a.score);
+      comparedProducts = sortedMatches.slice(0, 3).map(m => m.product);
+
+      // Handle nonexistent models (e.g. iPhone 15 vs S25)
+      if (lower.includes('iphone') || lower.includes('s25') || lower.includes('galaxy s25')) {
+        noteText = `*(Note: The requested 'iPhone 15' or 'Samsung Galaxy S25' are not available in our store catalog. I am comparing the closest high-end mobile devices available in our database instead.)*\n\n`;
+        const s24 = dbProducts.find(p => p.name.includes('S24 Ultra'));
+        const nord = dbProducts.find(p => p.name.includes('Nord CE4'));
+        if (s24 && !comparedProducts.find(cp => cp.id === s24.id)) comparedProducts.push(s24);
+        if (nord && !comparedProducts.find(cp => cp.id === nord.id)) comparedProducts.push(nord);
+      }
+
+      // If we don't have enough matched products, but we have a general use case like "gaming"
+      if (comparedProducts.length < 2) {
+        if (lower.includes('gaming') || lower.includes('game')) {
+          const ps5 = dbProducts.find(p => p.name.toLowerCase().includes('playstation'));
+          const s24 = dbProducts.find(p => p.name.includes('S24 Ultra'));
+          const vivo = dbProducts.find(p => p.name.includes('Vivo T3x'));
+          if (ps5 && !comparedProducts.find(cp => cp.id === ps5.id)) comparedProducts.push(ps5);
+          if (s24 && !comparedProducts.find(cp => cp.id === s24.id)) comparedProducts.push(s24);
+          if (vivo && comparedProducts.length < 3 && !comparedProducts.find(cp => cp.id === vivo.id)) comparedProducts.push(vivo);
+        } else if (lower.includes('audio') || lower.includes('headphone') || lower.includes('earbud') || lower.includes('music')) {
+          const sonyHeadphones = dbProducts.find(p => p.name.includes('WH-1000XM5'));
+          const boatNeckband = dbProducts.find(p => p.name.includes('Rockerz 255'));
+          const boatEarbuds = dbProducts.find(p => p.name.includes('Airdopes 141'));
+          if (sonyHeadphones && !comparedProducts.find(cp => cp.id === sonyHeadphones.id)) comparedProducts.push(sonyHeadphones);
+          if (boatNeckband && !comparedProducts.find(cp => cp.id === boatNeckband.id)) comparedProducts.push(boatNeckband);
+          if (boatEarbuds && comparedProducts.length < 3 && !comparedProducts.find(cp => cp.id === boatEarbuds.id)) comparedProducts.push(boatEarbuds);
+        } else if (lower.includes('laptop') || lower.includes('code') || lower.includes('work') || lower.includes('programming')) {
+          const macbook = dbProducts.find(p => p.name.includes('MacBook'));
+          const s24 = dbProducts.find(p => p.name.includes('S24 Ultra'));
+          if (macbook && !comparedProducts.find(cp => cp.id === macbook.id)) comparedProducts.push(macbook);
+          if (s24 && !comparedProducts.find(cp => cp.id === s24.id)) comparedProducts.push(s24);
+        }
+      }
+
+      if (comparedProducts.length < 2) {
+        recommended.forEach(p => {
+          if (comparedProducts.length < 3 && !comparedProducts.find(cp => cp.id === p.id)) {
+            comparedProducts.push(p);
+          }
+        });
+      }
+
+      if (comparedProducts.length >= 2) {
+        reply = `### Extracted Requirements:\n`;
+        reply += `- **Category:** ${matchedCategory || 'N/A'}\n`;
+        reply += `- **Budget:** ${maxPriceLimit ? `Under ₹${maxPriceLimit.toLocaleString('en-IN')}` : 'N/A'}\n`;
+        reply += `- **Use Case:** Comparison & Analysis\n`;
+        reply += `- **Preferences:** ${extractedPrefs}\n\n`;
+        
+        reply += noteText;
+        reply += `Here is a side-by-side comparison of the requested products from our database:\n\n`;
+
+        // 1. Feature Comparison Table
+        reply += `#### 📊 Feature Comparison\n\n`;
+        reply += `| Feature | ` + comparedProducts.map(p => `**${p.name.substring(0, 25)}...**`).join(' | ') + ` |\n`;
+        reply += `| --- | ` + comparedProducts.map(() => `---`).join(' | ') + ` |\n`;
+        
+        reply += `| **Price** | ` + comparedProducts.map(p => p.discountPrice > 0 ? `₹${p.discountPrice.toLocaleString('en-IN')} *(Sale)*` : `₹${p.price.toLocaleString('en-IN')}`).join(' | ') + ` |\n`;
+        reply += `| **Rating** | ` + comparedProducts.map(p => `⭐ ${p.rating} / 5.0`).join(' | ') + ` |\n`;
+        
+        const allSpecKeys = [];
+        comparedProducts.forEach(p => {
+          if (p.specifications) {
+            p.specifications.forEach(spec => {
+              if (!allSpecKeys.includes(spec.key)) allSpecKeys.push(spec.key);
+            });
+          }
+        });
+
+        const displaySpecKeys = allSpecKeys.slice(0, 4);
+        displaySpecKeys.forEach(key => {
+          reply += `| **${key}** | ` + comparedProducts.map(p => {
+            const found = p.specifications && p.specifications.find(s => s.key === key);
+            return found ? found.value : 'N/A';
+          }).join(' | ') + ` |\n`;
+        });
+        reply += `\n`;
+
+        // 2. Pros & Cons
+        reply += `#### 🟢 Pros & 🔴 Cons\n\n`;
+        comparedProducts.forEach(p => {
+          reply += `##### **${p.name}**\n`;
+          reply += `- **Pros:**\n`;
+          const activePros = p.pros && p.pros.length > 0 ? p.pros : ['Premium build quality', 'Excellent utility'];
+          activePros.slice(0, 3).forEach(pro => {
+            reply += `  - ✅ ${pro}\n`;
+          });
+          reply += `- **Cons:**\n`;
+          const activeCons = p.cons && p.cons.length > 0 ? p.cons : ['Premium price tag relative to budget options'];
+          activeCons.slice(0, 3).forEach(con => {
+            reply += `  - ❌ ${con}\n`;
+          });
+          reply += `\n`;
+        });
+
+        // 3. Verdict
+        const p1 = comparedProducts[0];
+        const p2 = comparedProducts[1];
+        const p1Price = p1.discountPrice > 0 ? p1.discountPrice : p1.price;
+        const p2Price = p2.discountPrice > 0 ? p2.discountPrice : p2.price;
+
+        reply += `#### 🏆 AI Recommendation Verdict\n\n`;
+        reply += `- **Best Performance / Feature Pick:** **${p1.rating >= p2.rating ? p1.name : p2.name}** is the top-rated option at **${Math.max(p1.rating, p2.rating)}/5.0** stars.\n`;
+        reply += `- **Best Budget / Value Pick:** **${p1Price <= p2Price ? p1.name : p2.name}** offers the most savings, priced at **₹${Math.min(p1Price, p2Price).toLocaleString('en-IN')}**.\n\n`;
+        
+        if (lower.includes('gaming') || lower.includes('game')) {
+          reply += `*For gaming: We strongly recommend prioritizing high refresh-rate displays, powerful processors (like Snapdragon 8 Gen 3), or custom console architectures listed in the features table.*`;
+        } else {
+          reply += `*Consider your exact requirements: Choose based on whether budget, durability, or raw specs fit your current daily productivity or lifestyle needs.*`;
+        }
+
+        // Overwrite recommended items with the database model formats
+        recommended.length = 0;
+        comparedProducts.forEach(cp => {
+          const match = filteredProducts.find(p => p._id.toString() === cp.id || p._id.toString() === cp._id?.toString());
+          if (match) recommended.push(match);
+        });
+      }
+    }
+
+    if (!reply && recommended.length > 0) {
       reply = `### Extracted Requirements:\n`;
       reply += `- **Category:** ${matchedCategory || 'N/A'}\n`;
       reply += `- **Budget:** ${maxPriceLimit ? `Under ₹${maxPriceLimit.toLocaleString('en-IN')}` : 'N/A'}\n`;
@@ -324,11 +483,9 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
           ? `**₹${p.discountPrice.toLocaleString('en-IN')}** (Save ₹${(p.price - p.discountPrice).toLocaleString('en-IN')})`
           : `**₹${p.price.toLocaleString('en-IN')}**`;
         
-        // Dynamic Value for Money Score based on rating and discount presence
         let valScore = Math.min(10, Math.round(p.rating * 2));
         if (p.discountPrice > 0) valScore = Math.min(10, valScore + 1);
 
-        // Dynamic Why Recommended
         let whyRecommended = `This product is highly recommended because it is a premium ${p.category} item from ${p.brand} that fits your budget and search parameters.`;
         if (extractedUseCase === 'High-Fidelity Gaming' && p.category === 'Electronics') {
           whyRecommended = `Perfect fit for gaming, offering robust high-speed performance and standard graphics rendering capability.`;
@@ -338,7 +495,6 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
           whyRecommended = `Highly suited for training sessions, designed to support physical exercise with breathable construction and custom support.`;
         }
 
-        // Dynamic Best Use Case
         let bestUseCase = p.useCases && p.useCases.length > 0 ? p.useCases[0] : extractedUseCase;
 
         reply += `### ${idx + 1}. ${p.name}\n`;
@@ -354,7 +510,7 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
         reply += `- **Value for Money Score:** ${valScore}/10\n\n`;
       });
       reply += `Feel free to click on the product card(s) below to view full specifications, add items to your cart, or check out! Let me know if you need any other options compared or searched.`;
-    } else {
+    } else if (!reply) {
       reply = `### Extracted Requirements:\n`;
       reply += `- **Category:** ${matchedCategory || 'N/A'}\n`;
       reply += `- **Budget:** ${maxPriceLimit ? `Under ₹${maxPriceLimit.toLocaleString('en-IN')}` : 'N/A'}\n`;
@@ -406,16 +562,20 @@ export const compareProducts = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'No matching products found' });
     }
 
+    const openai = getOpenAIClient();
     const gemini = getGeminiClient();
 
-    if (gemini) {
-      try {
-        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const systemPrompt = `You are a premium AI Product Comparison Engine for "SmartCommerce".
+    const systemPrompt = `You are a premium AI Product Comparison Engine for "SmartCommerce".
 Your task is to take the provided products list and generate a side-by-side comparison including specs, pros, cons, and a final recommended choice (verdict).
 
 Here are the products to compare (JSON):
 ${JSON.stringify(products, null, 2)}
+
+Instructions for Zero Hallucination:
+1. Use ONLY specifications, pricing, description, and seeded pros/cons from the provided products JSON. Do NOT invent specs or features not present in the data.
+2. The "prosCons" object keys must match the exact "_id" strings of the products.
+3. The "specsComparison" array values must map keys from "specifications" or attributes of the database products.
+4. The "verdict" should summarize the recommendation, citing the database specifications and pricing.
 
 Return your response strictly in the following JSON format:
 {
@@ -428,6 +588,30 @@ Return your response strictly in the following JSON format:
   "verdict": "Detailed markdown final verdict explaining which one is recommended for what type of user."
 }`;
 
+    let parsed = null;
+
+    // 1. Try OpenAI API
+    if (openai) {
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Generate the comparison now.' }
+          ],
+          response_format: { type: 'json_object' }
+        });
+        const responseText = response.choices[0].message.content.trim();
+        parsed = JSON.parse(responseText);
+      } catch (err) {
+        console.warn('OpenAI comparison call failed, attempting Gemini fallback:', err.message);
+      }
+    }
+
+    // 2. Try Gemini API as fallback
+    if (!parsed && gemini) {
+      try {
+        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const prompt = `${systemPrompt}\n\nGenerate the comparison now.`;
         const result = await model.generateContent(prompt);
         const responseText = result.response.text().trim();
@@ -438,16 +622,18 @@ Return your response strictly in the following JSON format:
         } else if (jsonStr.startsWith('```')) {
           jsonStr = jsonStr.substring(3, jsonStr.length - 3).trim();
         }
-
-        const parsed = JSON.parse(jsonStr);
-        return res.json({
-          success: true,
-          products,
-          comparison: parsed
-        });
+        parsed = JSON.parse(jsonStr);
       } catch (err) {
         console.warn('Gemini comparison call failed, falling back to local comparison generator:', err.message);
       }
+    }
+
+    if (parsed) {
+      return res.json({
+        success: true,
+        products,
+        comparison: parsed
+      });
     }
 
     // --- LOCAL HEURISTIC COMPARISON GENERATOR ---
@@ -457,31 +643,31 @@ Return your response strictly in the following JSON format:
     // Mapped standard specifications keys
     products.forEach(p => {
       const pId = p._id.toString();
-      
-      // Initialize pros/cons
-      const activePrice = p.discountPrice > 0 ? p.discountPrice : p.price;
       const rating = p.rating || 4.0;
+      const activePrice = p.discountPrice > 0 ? p.discountPrice : p.price;
       
       const pros = [];
       const cons = [];
 
-      if (rating >= 4.6) pros.push('Highly rated by customers');
-      if (p.discountPrice > 0) pros.push('Currently on discount sale');
-      if (p.stock < 20 && p.stock > 0) cons.push('Limited stock remaining');
-      if (activePrice > 50000) cons.push('Premium price point');
-
-      // Generate mock pros/cons by product category/brand details
-      if (p.category === 'Electronics') {
-        pros.push('Premium build quality');
-        pros.push('High performance specifications');
-      } else if (p.category === 'Fashion') {
-        pros.push('Modern stylish aesthetics');
-        pros.push('Comfortable for daily wear');
-      } else if (p.category === 'Home & Kitchen') {
-        pros.push('Highly utility driven design');
-        pros.push('Durable long lasting materials');
+      // Pull actual pros and cons from MongoDB product
+      if (p.pros && p.pros.length > 0) {
+        pros.push(...p.pros);
       } else {
-        pros.push('Excellent value for money');
+        if (rating >= 4.6) pros.push('Highly rated by customers');
+        if (p.discountPrice > 0) pros.push('Currently on discount sale');
+        if (p.category === 'Electronics') {
+          pros.push('Premium build quality');
+          pros.push('High performance specifications');
+        } else {
+          pros.push('Excellent value for money');
+        }
+      }
+
+      if (p.cons && p.cons.length > 0) {
+        cons.push(...p.cons);
+      } else {
+        if (p.stock < 20 && p.stock > 0) cons.push('Limited stock remaining');
+        if (activePrice > 50000) cons.push('Premium price point');
       }
 
       prosCons[pId] = { pros, cons };
