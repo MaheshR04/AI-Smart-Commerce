@@ -117,7 +117,18 @@ ${JSON.stringify(dbProducts, null, 2)}
 
 Instructions:
 1. Recommending items: Recommend only from the catalog list above. Do NOT invent new products. If no products match, politely explain what categories/brands are available.
-2. Be a shopping assistant: Help the user decide what to buy. Detail the brand, specifications, active price (use discount price if > 0), pros, cons, and use cases.
+2. Be a shopping assistant: Help the user decide what to buy. You MUST structure your reply as follows:
+   - At the very top of your reply, display the extracted requirements from the user's query:
+     * **Extracted Category:** <category name or N/A>
+     * **Extracted Budget:** <budget limit or N/A>
+     * **Extracted Use Case:** <intended use case or N/A>
+     * **Extracted Preferences:** <extracted preferences like brands, size, specs or N/A>
+   - Then, introduce your recommendation.
+   - For every recommended product, you MUST include:
+     * Brand, specifications, active price (use discount price if > 0).
+     * **Why Recommended:** <detailed explanation of why this product fits their query/needs>
+     * **Best Use Case:** <specific best use case scenario for this product>
+     * **Value for Money Score:** <score>/10 (evaluated based on the product features and pricing)
 3. User intent: Tailor choices to match the user's favorite brands, favorite categories, budget constraints, and explicit interests when appropriate.
 4. Response formatting: Use clear, beautifully structured markdown with bullet points.
 5. In your response JSON, also return a structured list of recommended product IDs in the "recommendations" array.
@@ -275,15 +286,61 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
 
     const recommended = scoredProducts.slice(0, 3).map(sp => sp.product);
 
+    // Heuristic Preferences Extraction
+    let extractedPrefs = 'N/A';
+    const brandsInDb = ['Apple', 'Samsung', 'Sony', 'Nike', 'Adidas', 'Vega', 'Solimo', 'D\'Decor', 'Lykos', 'OnePlus', 'iQOO', 'Vivo', 'Dyson', 'ASUS', 'Bose', 'Logitech', 'Intel', 'AMD', 'NVIDIA', 'HP', 'Dell', 'Lenovo'];
+    const foundBrands = [];
+    brandsInDb.forEach(b => {
+      if (lower.includes(b.toLowerCase())) {
+        foundBrands.push(b);
+      }
+    });
+    if (foundBrands.length > 0) {
+      extractedPrefs = `Preferred Brand(s): ${foundBrands.join(', ')}`;
+    }
+
+    // Heuristic Use Case Extraction
+    let extractedUseCase = 'General Everyday Use';
+    if (lower.includes('game') || lower.includes('gaming') || lower.includes('playstation')) {
+      extractedUseCase = 'High-Fidelity Gaming';
+    } else if (lower.includes('code') || lower.includes('program') || lower.includes('develop')) {
+      extractedUseCase = 'Software Programming & Compilation';
+    } else if (lower.includes('jog') || lower.includes('run') || lower.includes('walk') || lower.includes('gym') || lower.includes('workout')) {
+      extractedUseCase = 'Athletic & Fitness Training';
+    }
+
     // Formulate a beautiful markdown response based on query
     let reply = '';
     if (recommended.length > 0) {
-      reply = `Based on your request, I searched our catalog and found the following top recommendation(s) matching your criteria:\n\n`;
+      reply = `### Extracted Requirements:\n`;
+      reply += `- **Category:** ${matchedCategory || 'N/A'}\n`;
+      reply += `- **Budget:** ${maxPriceLimit ? `Under ₹${maxPriceLimit.toLocaleString('en-IN')}` : 'N/A'}\n`;
+      reply += `- **Use Case:** ${extractedUseCase}\n`;
+      reply += `- **Preferences:** ${extractedPrefs}\n\n`;
+      reply += `Based on your request, I searched our catalog and found the following top recommendation(s) matching your criteria:\n\n`;
+      
       recommended.forEach((p, idx) => {
         const priceStr = p.discountPrice > 0 
           ? `**₹${p.discountPrice.toLocaleString('en-IN')}** (Save ₹${(p.price - p.discountPrice).toLocaleString('en-IN')})`
           : `**₹${p.price.toLocaleString('en-IN')}**`;
-          
+        
+        // Dynamic Value for Money Score based on rating and discount presence
+        let valScore = Math.min(10, Math.round(p.rating * 2));
+        if (p.discountPrice > 0) valScore = Math.min(10, valScore + 1);
+
+        // Dynamic Why Recommended
+        let whyRecommended = `This product is highly recommended because it is a premium ${p.category} item from ${p.brand} that fits your budget and search parameters.`;
+        if (extractedUseCase === 'High-Fidelity Gaming' && p.category === 'Electronics') {
+          whyRecommended = `Perfect fit for gaming, offering robust high-speed performance and standard graphics rendering capability.`;
+        } else if (extractedUseCase === 'Software Programming & Compilation' && p.category === 'Electronics') {
+          whyRecommended = `Excellent for development, featuring great processing power, multitasking capacity, and reliability.`;
+        } else if (extractedUseCase === 'Athletic & Fitness Training' && p.category === 'Fashion') {
+          whyRecommended = `Highly suited for training sessions, designed to support physical exercise with breathable construction and custom support.`;
+        }
+
+        // Dynamic Best Use Case
+        let bestUseCase = p.useCases && p.useCases.length > 0 ? p.useCases[0] : extractedUseCase;
+
         reply += `### ${idx + 1}. ${p.name}\n`;
         reply += `- **Brand:** ${p.brand} | **Rating:** ${p.rating} / 5.0\n`;
         reply += `- **Price:** ${priceStr}\n`;
@@ -291,11 +348,19 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
         if (p.specifications && p.specifications.length > 0) {
           reply += `- **Key Specs:** ${p.specifications.slice(0, 3).map(s => `${s.key}: ${s.value}`).join(' | ')}\n`;
         }
-        reply += `- **Summary:** ${p.description.substring(0, 140)}...\n\n`;
+        reply += `- **Summary:** ${p.description.substring(0, 140)}...\n`;
+        reply += `- **Why Recommended:** ${whyRecommended}\n`;
+        reply += `- **Best Use Case:** ${bestUseCase}\n`;
+        reply += `- **Value for Money Score:** ${valScore}/10\n\n`;
       });
       reply += `Feel free to click on the product card(s) below to view full specifications, add items to your cart, or check out! Let me know if you need any other options compared or searched.`;
     } else {
-      reply = `I couldn't find any products in our current catalog that exactly match your filters. Try checking your spelling or adjusting your budget limits. \n\nYou can also browse our main categories like **Electronics**, **Fashion**, and **Home & Kitchen** directly from the homepage menu.`;
+      reply = `### Extracted Requirements:\n`;
+      reply += `- **Category:** ${matchedCategory || 'N/A'}\n`;
+      reply += `- **Budget:** ${maxPriceLimit ? `Under ₹${maxPriceLimit.toLocaleString('en-IN')}` : 'N/A'}\n`;
+      reply += `- **Use Case:** ${extractedUseCase}\n`;
+      reply += `- **Preferences:** ${extractedPrefs}\n\n`;
+      reply += `I couldn't find any products in our current catalog that exactly match your filters. Try checking your spelling or adjusting your budget limits. \n\nYou can also browse our main categories like **Electronics**, **Fashion**, and **Home & Kitchen** directly from the homepage menu.`;
     }
 
     // Save AIChat history
