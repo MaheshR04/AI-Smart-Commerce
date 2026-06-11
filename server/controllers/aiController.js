@@ -6,6 +6,9 @@ import AIChat from '../models/AIChat.js';
 import AIRecommendation from '../models/AIRecommendation.js';
 import UserPreference from '../models/UserPreference.js';
 import UserBehavior from '../models/UserBehavior.js';
+import Cart from '../models/Cart.js';
+import Order from '../models/Order.js';
+import Wishlist from '../models/Wishlist.js';
 
 // Initialize Gemini API if key is present
 const getGeminiClient = () => {
@@ -1576,6 +1579,7 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
       }
     }
 
+
     return res.json({
       success: true,
       withinBudget: finalWithinBudget,
@@ -1585,5 +1589,219 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
     next(error);
   }
 };
+
+/**
+ * @desc    Get Personalized Recommendations (Feature 7)
+ * @route   POST /api/ai/personalized-recommendations
+ * @access  Public (Optional Authentication)
+ */
+export const getPersonalizedRecommendations = async (req, res, next) => {
+  try {
+    const { viewedProductIds = [] } = req.body;
+    const allProducts = await Product.find({});
+
+    // -------------------------------------------------------------------------
+    // 1. RECOMMENDED FOR YOU
+    // -------------------------------------------------------------------------
+    let recommendedForYou = [];
+    if (req.user) {
+      const prefs = await UserPreference.findOne({ userId: req.user._id });
+      if (prefs) {
+        const conditions = [];
+        if (prefs.favoriteCategories && prefs.favoriteCategories.length > 0) {
+          conditions.push({ category: { $in: prefs.favoriteCategories } });
+        }
+        if (prefs.favoriteBrands && prefs.favoriteBrands.length > 0) {
+          conditions.push({ brand: { $in: prefs.favoriteBrands } });
+        }
+        if (prefs.interests && prefs.interests.length > 0) {
+          conditions.push({ tags: { $in: prefs.interests } });
+          conditions.push({ useCases: { $in: prefs.interests } });
+          conditions.push({ keywords: { $in: prefs.interests } });
+        }
+
+        const queryObj = {};
+        if (conditions.length > 0) {
+          queryObj.$or = conditions;
+        }
+
+        // Add budget filter if specified
+        if (prefs.budgetRange && prefs.budgetRange.max > 0) {
+          const maxLimit = prefs.budgetRange.max;
+          const minLimit = prefs.budgetRange.min || 0;
+          queryObj.$or = (queryObj.$or || []).concat([
+            { discountPrice: { $gte: minLimit, $lte: maxLimit } },
+            { $and: [
+              { $or: [{ discountPrice: { $exists: false } }, { discountPrice: 0 }] },
+              { price: { $gte: minLimit, $lte: maxLimit } }
+            ] }
+          ]);
+        }
+
+        recommendedForYou = await Product.find(queryObj).sort({ rating: -1 }).limit(8);
+      }
+    }
+
+    // Fallback/padding for Recommended for You
+    if (recommendedForYou.length < 8) {
+      const excludeIds = recommendedForYou.map(p => p._id.toString());
+      const padLimit = 8 - recommendedForYou.length;
+      const padProducts = await Product.find({ _id: { $nin: excludeIds } })
+        .sort({ rating: -1 })
+        .limit(padLimit);
+      recommendedForYou = [...recommendedForYou, ...padProducts];
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. BECAUSE YOU VIEWED
+    // -------------------------------------------------------------------------
+    let targetViewedIds = [];
+    if (req.user) {
+      const behavior = await UserBehavior.findOne({ userId: req.user._id });
+      if (behavior && behavior.viewedProducts && behavior.viewedProducts.length > 0) {
+        const sortedViews = [...behavior.viewedProducts].sort((a, b) => b.timestamp - a.timestamp);
+        const seen = new Set();
+        sortedViews.forEach(v => {
+          if (v.productId) seen.add(v.productId.toString());
+        });
+        targetViewedIds = Array.from(seen).slice(0, 2); // get last 2 viewed
+      }
+    }
+
+    // Guest fallback
+    if (targetViewedIds.length === 0 && Array.isArray(viewedProductIds) && viewedProductIds.length > 0) {
+      targetViewedIds = viewedProductIds.slice(0, 2);
+    }
+
+    const becauseYouViewed = [];
+    if (targetViewedIds.length > 0) {
+      const baseProducts = await Product.find({ _id: { $in: targetViewedIds } });
+      for (const baseProd of baseProducts) {
+        const related = await Product.find({
+          category: baseProd.category,
+          _id: { $nin: [baseProd._id, ...targetViewedIds] }
+        })
+        .sort({ rating: -1 })
+        .limit(4);
+
+        if (related.length > 0) {
+          becauseYouViewed.push({
+            baseProduct: baseProd,
+            recommendations: related
+          });
+        }
+      }
+    }
+
+    // Fallback if no view history
+    if (becauseYouViewed.length === 0) {
+      const fallbackBases = await Product.find({}).sort({ rating: -1, stock: -1 }).limit(2);
+      for (const baseProd of fallbackBases) {
+        const related = await Product.find({
+          category: baseProd.category,
+          _id: { $ne: baseProd._id }
+        })
+        .sort({ rating: -1 })
+        .limit(4);
+
+        if (related.length > 0) {
+          becauseYouViewed.push({
+            baseProduct: baseProd,
+            recommendations: related
+          });
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. FREQUENTLY BOUGHT TOGETHER
+    // -------------------------------------------------------------------------
+    const focalIds = new Set();
+    if (req.user) {
+      // Cart items
+      const cart = await Cart.findOne({ userId: req.user._id });
+      if (cart && cart.items && cart.items.length > 0) {
+        cart.items.forEach(item => focalIds.add(item.productId.toString()));
+      }
+      // Wishlist items
+      const wishlist = await Wishlist.findOne({ userId: req.user._id });
+      if (wishlist && wishlist.products && wishlist.products.length > 0) {
+        wishlist.products.forEach(id => focalIds.add(id.toString()));
+      }
+      // Purchase history
+      const behavior = await UserBehavior.findOne({ userId: req.user._id });
+      if (behavior && behavior.purchasedProducts && behavior.purchasedProducts.length > 0) {
+        behavior.purchasedProducts.forEach(item => focalIds.add(item.productId.toString()));
+      }
+    }
+
+    // Also include viewed items in focal checklist if nothing else
+    if (focalIds.size === 0) {
+      targetViewedIds.forEach(id => focalIds.add(id));
+    }
+
+    const focalArray = Array.from(focalIds);
+    let frequentlyBoughtTogether = [];
+
+    if (focalArray.length > 0) {
+      // Find orders containing any focal item
+      const orders = await Order.find({ 'products.productId': { $in: focalArray } });
+      const counts = {};
+      orders.forEach(order => {
+        order.products.forEach(item => {
+          const itemStr = item.productId.toString();
+          if (!focalIds.has(itemStr)) {
+            counts[itemStr] = (counts[itemStr] || 0) + 1;
+          }
+        });
+      });
+
+      const sortedCoOccurrences = Object.keys(counts)
+        .sort((a, b) => counts[b] - counts[a])
+        .slice(0, 4);
+
+      if (sortedCoOccurrences.length > 0) {
+        frequentlyBoughtTogether = await Product.find({ _id: { $in: sortedCoOccurrences } });
+      }
+    }
+
+    // Fallback/Accessory pairing heuristic
+    if (frequentlyBoughtTogether.length < 4) {
+      const currentIds = frequentlyBoughtTogether.map(p => p._id.toString());
+      const exclude = [...focalArray, ...currentIds];
+
+      // Accessories/Complementary categories
+      const accessories = await Product.find({
+        _id: { $nin: exclude },
+        $or: [
+          { name: /earbud|headphone|mouse|curtain|vacuum|helmet/i },
+          { tags: { $in: ['accessory', 'essential', 'utility', 'complementary'] } }
+        ]
+      }).limit(4 - frequentlyBoughtTogether.length);
+
+      frequentlyBoughtTogether = [...frequentlyBoughtTogether, ...accessories];
+    }
+
+    // Final padding to ensure we yield 4 items
+    if (frequentlyBoughtTogether.length < 4) {
+      const currentIds = frequentlyBoughtTogether.map(p => p._id.toString());
+      const exclude = [...focalArray, ...currentIds];
+      const padProducts = await Product.find({ _id: { $nin: exclude } })
+        .sort({ rating: -1 })
+        .limit(4 - frequentlyBoughtTogether.length);
+      frequentlyBoughtTogether = [...frequentlyBoughtTogether, ...padProducts];
+    }
+
+    return res.json({
+      success: true,
+      recommendedForYou,
+      becauseYouViewed,
+      frequentlyBoughtTogether
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 

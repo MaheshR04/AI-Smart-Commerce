@@ -9,7 +9,7 @@ import API from '../services/api';
 import { 
   Filter, SlidersHorizontal, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight, 
   Sparkles, ArrowRight, Eye, Star, ShoppingBag, Truck, ShieldCheck, RotateCcw, 
-  Headset, ShoppingCart, User, Gift, Percent, Compass, Heart
+  Headset, ShoppingCart, User, Gift, Percent, Compass, Heart, Plus, Check
 } from 'lucide-react';
 
 
@@ -27,7 +27,7 @@ export const Home = () => {
   } = shopContextData;
 
   const { user } = useContext(AuthContext) || {};
-  const { getCartCount } = useContext(CartContext) || {};
+  const { getCartCount, addToCart } = useContext(CartContext) || {};
   
   const safeProducts = Array.isArray(products) ? products : [];
   const safeCategories = Array.isArray(categories) ? categories : [];
@@ -141,6 +141,35 @@ export const Home = () => {
   // Safely grab the current active promo slide
   const currentPromo = promoSlides[activeSlide] || promoSlides[0];
 
+  const [personalization, setPersonalization] = useState({
+    recommendedForYou: [],
+    becauseYouViewed: [],
+    frequentlyBoughtTogether: []
+  });
+  const [personalizationLoading, setPersonalizationLoading] = useState(false);
+  const [addedItemIds, setAddedItemIds] = useState(new Set());
+
+  const handleAddToCart = async (product) => {
+    if (!addToCart) return;
+    try {
+      await addToCart(product._id, 1, product);
+      setAddedItemIds((prev) => {
+        const next = new Set(prev);
+        next.add(product._id);
+        return next;
+      });
+      setTimeout(() => {
+        setAddedItemIds((prev) => {
+          const next = new Set(prev);
+          next.delete(product._id);
+          return next;
+        });
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to add item to cart:', err.message);
+    }
+  };
+
   useEffect(() => {
     try {
       const ids = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
@@ -154,6 +183,26 @@ export const Home = () => {
       console.error('Failed to parse recentlyViewed:', err);
     }
   }, [safeProducts]);
+
+  useEffect(() => {
+    const fetchPersonalization = async () => {
+      setPersonalizationLoading(true);
+      try {
+        const localViewedIds = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+        const response = await API.post('/ai/personalized-recommendations', {
+          viewedProductIds: localViewedIds
+        });
+        if (response.data && response.data.success) {
+          setPersonalization(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch personalized recommendations:', err.message);
+      } finally {
+        setPersonalizationLoading(false);
+      }
+    };
+    fetchPersonalization();
+  }, [user, safeProducts]);
 
   const handleCategorySelect = (categoryName) => {
     const nextCategory = safeFilters.category === categoryName ? '' : categoryName;
@@ -685,6 +734,149 @@ export const Home = () => {
               </div>
             </div>
           </section>
+
+          {/* PERSONALIZED RECOMMENDATION HUB (Feature 7) */}
+          {!personalizationLoading && (personalization.recommendedForYou?.length > 0 || personalization.becauseYouViewed?.length > 0 || personalization.frequentlyBoughtTogether?.length > 0) && (
+            <div className="space-y-12 border-t border-b border-slate-100 dark:border-slate-800 py-10 my-4 animate-fade-in">
+              
+              {/* Header Title */}
+              <div className="text-center max-w-xl mx-auto space-y-2 pb-2">
+                <div className="inline-flex bg-gradient-to-tr from-sky-500 to-indigo-500 p-2.5 rounded-2xl text-white shadow-sm">
+                  <Sparkles className="w-5 h-5 animate-pulse" />
+                </div>
+                <h2 className="text-lg sm:text-xl font-extrabold text-slate-800 dark:text-white tracking-tight leading-tight">
+                  Your Personalized Hub
+                </h2>
+                <p className="text-[11px] text-slate-400 dark:text-slate-450">
+                  AI-driven selections crafted specifically from your browsing history, past orders, and shopping list preferences.
+                </p>
+              </div>
+
+              {/* 1. RECOMMENDED FOR YOU */}
+              {personalization.recommendedForYou && personalization.recommendedForYou.length > 0 && (
+                <section className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-sky-500" />
+                        Recommended for You
+                      </h3>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                        Tailored product matches fitting your favorite brands and budget choices.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                    {personalization.recommendedForYou.slice(0, 4).map((prod) => (
+                      <ProductCard key={prod._id} product={prod} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* 2. FREQUENTLY BOUGHT TOGETHER BUNDLES */}
+              {personalization.frequentlyBoughtTogether && personalization.frequentlyBoughtTogether.length > 0 && (
+                <section className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                        <Gift className="w-4 h-4 text-indigo-500" />
+                        Frequently Bought Together
+                      </h3>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                        Bundle these popular complements bought together by other shoppers.
+                      </p>
+                    </div>
+                    
+                    {/* Add Bundle Button */}
+                    <button
+                      onClick={async () => {
+                        try {
+                          for (const p of personalization.frequentlyBoughtTogether) {
+                            await addToCart(p._id, 1, p);
+                          }
+                          alert('Frequently Bought Together accessories successfully added to your cart!');
+                        } catch (err) {
+                          console.error('Failed to add bundle to cart:', err.message);
+                        }
+                      }}
+                      className="px-5 py-2.5 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg active:scale-97 transition-all cursor-pointer inline-flex items-center gap-1.5 animate-fade-in"
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5" />
+                      Add Bundle to Cart (₹{personalization.frequentlyBoughtTogether.reduce((acc, p) => acc + (p.discountPrice > 0 ? p.discountPrice : p.price), 0).toLocaleString('en-IN')})
+                    </button>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {personalization.frequentlyBoughtTogether.slice(0, 4).map((prod) => (
+                      <ProductCard key={prod._id} product={prod} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* 3. BECAUSE YOU VIEWED */}
+              {personalization.becauseYouViewed && personalization.becauseYouViewed.length > 0 && (
+                <section className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                      <Eye className="w-4 h-4 text-indigo-500" />
+                      Because You Viewed
+                    </h3>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                      Alternate options and accessory recommendations based on your viewed products.
+                    </p>
+                  </div>
+
+                  <div className="space-y-8">
+                    {personalization.becauseYouViewed.slice(0, 2).map((entry, idx) => {
+                      const base = entry.baseProduct;
+                      if (!base) return null;
+                      return (
+                        <div key={base._id || idx} className="bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-700/50 rounded-3xl p-5 flex flex-col xl:flex-row gap-6 items-stretch">
+                          
+                          {/* Base product view tag card */}
+                          <div className="xl:w-80 flex-shrink-0 flex flex-col justify-between p-4 bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700 rounded-2xl relative shadow-sm">
+                            <span className="absolute top-3 left-3 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-700 text-slate-555 dark:text-slate-300 rounded-md">
+                              Recently Looked At
+                            </span>
+                            <div className="space-y-4 mt-3">
+                              <Link to={`/products/${base._id}`} className="aspect-video block rounded-xl overflow-hidden bg-slate-100 border border-slate-100 dark:border-slate-700">
+                                <img src={base.images && base.images[0] ? base.images[0] : ''} alt={base.name} className="w-full h-full object-cover" />
+                              </Link>
+                              <div className="space-y-1">
+                                <span className="text-[8px] font-bold text-slate-400 uppercase">{base.brand}</span>
+                                <Link to={`/products/${base._id}`} className="block">
+                                  <h4 className="text-xs font-bold text-slate-808 dark:text-white hover:text-sky-600 line-clamp-2 leading-tight">
+                                    {base.name}
+                                  </h4>
+                                </Link>
+                                <p className="text-xs font-extrabold text-slate-900 dark:text-slate-200 pt-1">
+                                  ₹{(base.discountPrice > 0 ? base.discountPrice : base.price).toLocaleString('en-IN')}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Related recommendations */}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mb-3">Suggested Complements & Alternatives</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                              {entry.recommendations.slice(0, 3).map((rec) => (
+                                <ProductCard key={rec._id} product={rec} />
+                              ))}
+                            </div>
+                          </div>
+
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+            </div>
+          )}
 
           {/* Visual Round Category Grid */}
           <section className="space-y-4">
