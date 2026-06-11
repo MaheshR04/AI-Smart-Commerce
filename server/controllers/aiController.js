@@ -38,6 +38,7 @@ const getAllProductsSummary = async () => {
   const products = await Product.find({});
   return products.map(p => ({
     id: p._id.toString(),
+    _id: p._id,
     name: p.name,
     brand: p.brand,
     category: p.category,
@@ -45,6 +46,8 @@ const getAllProductsSummary = async () => {
     discountPrice: p.discountPrice || 0,
     activePrice: p.discountPrice > 0 ? p.discountPrice : p.price,
     rating: p.rating,
+    images: p.images || [],
+    stock: p.stock || 0,
     description: p.description,
     specifications: p.specifications,
     tags: p.tags || [],
@@ -1356,4 +1359,231 @@ Make sure to escape control characters in strings for valid JSON parsing.`;
     next(error);
   }
 };
+
+/**
+ * @desc    AI Budget Advisor
+ * @route   POST /api/ai/budget-advisor
+ * @access  Public
+ */
+export const getBudgetAdvice = async (req, res, next) => {
+  try {
+    const { budget, category } = req.body;
+    if (!budget || typeof budget !== 'number') {
+      return res.status(400).json({ success: false, message: 'Valid budget limit (number) is required' });
+    }
+
+    const allDbProducts = await getAllProductsSummary();
+    
+    // Filter active catalog products by category if provided
+    let filteredProducts = allDbProducts;
+    if (category && category !== 'All') {
+      filteredProducts = allDbProducts.filter(p => p.category.toLowerCase() === category.toLowerCase());
+    }
+
+    // Separate options: within budget vs stretch alternatives (up to 40% above budget)
+    const withinBudgetRaw = filteredProducts.filter(p => p.activePrice <= budget);
+    const alternativesRaw = filteredProducts.filter(p => p.activePrice > budget && p.activePrice <= budget * 1.4);
+
+    const openai = getOpenAIClient();
+    const gemini = getGeminiClient();
+
+    const systemPrompt = `You are a premium AI Budget Advisor for "SmartCommerce", a premium e-commerce platform.
+Your task is to analyze the user's budget (₹${budget}) and selected category ("${category || 'All'}"), and recommend:
+1. A list of 1 to 4 best options from our active catalog that fit within the user's budget (activePrice <= ₹${budget}).
+2. A list of 1 to 3 slightly more premium alternative products from our active catalog that are slightly above the budget (activePrice is between ₹${budget} and ₹${budget * 1.4}) in the same or matching category.
+3. For each stretch alternative, pair it with one of the "within budget" options, and provide a clear, convincing 1-2 sentence explanation of the "value difference" (why stretching the budget is worth it, citing real specs or pros).
+
+Here is our active product catalog (JSON):
+${JSON.stringify(filteredProducts, null, 2)}
+
+Instructions for Zero Hallucination:
+- Do NOT invent or hallucinate any products. Use ONLY the products present in the catalog list above.
+- Do NOT suggest alternatives whose activePrice is higher than ₹${budget * 1.4}.
+- Return your suggestions with clear, valid IDs.
+
+Return your response strictly in the following JSON format:
+{
+  "withinBudget": [
+    { "productId": "productIdStr", "reason": "Why this is an excellent choice within their budget." }
+  ],
+  "alternatives": [
+    { "productId": "alternativeProductIdStr", "upgradeFromId": "withinBudgetProductIdStr", "valueDifference": "Detailed reason why this stretch choice is worth the extra cost." }
+  ]
+}
+Make sure to escape control characters in strings for valid JSON parsing.`;
+
+    let parsed = null;
+
+    // 1. Try OpenAI API
+    if (openai) {
+      try {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Generate the budget advice recommendations now.' }
+          ],
+          response_format: { type: 'json_object' }
+        });
+        const responseText = response.choices[0].message.content.trim();
+        parsed = JSON.parse(responseText);
+      } catch (err) {
+        console.warn('OpenAI Budget Advisor call failed, attempting Gemini fallback:', err.message);
+      }
+    }
+
+    // 2. Try Gemini API as fallback
+    if (!parsed && gemini) {
+      try {
+        const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const prompt = `${systemPrompt}\n\nGenerate the budget advice recommendations now.`;
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text().trim();
+        
+        let jsonStr = responseText;
+        if (jsonStr.startsWith('```json')) {
+          jsonStr = jsonStr.substring(7, jsonStr.length - 3).trim();
+        } else if (jsonStr.startsWith('```')) {
+          jsonStr = jsonStr.substring(3, jsonStr.length - 3).trim();
+        }
+        parsed = JSON.parse(jsonStr);
+      } catch (err) {
+        console.warn('Gemini Budget Advisor call failed, falling back to local budget advice engine:', err.message);
+      }
+    }
+
+    // If LLM response succeeded, map back to DB product structures
+    if (parsed && parsed.withinBudget && Array.isArray(parsed.withinBudget)) {
+      const withinIds = parsed.withinBudget.map(w => w.productId);
+      const altIds = parsed.alternatives ? parsed.alternatives.map(a => a.productId) : [];
+      
+      const dbProducts = await Product.find({ _id: { $in: [...withinIds, ...altIds] } });
+
+      const finalWithinBudget = parsed.withinBudget.map(item => {
+        const product = dbProducts.find(p => p._id.toString() === item.productId);
+        if (product) {
+          return { product, reason: item.reason };
+        }
+        return null;
+      }).filter(Boolean);
+
+      const finalAlternatives = parsed.alternatives ? parsed.alternatives.map(item => {
+        const product = dbProducts.find(p => p._id.toString() === item.productId);
+        const upgradeFrom = dbProducts.find(p => p._id.toString() === item.upgradeFromId);
+        if (product && upgradeFrom) {
+          return {
+            product,
+            upgradeFromId: item.upgradeFromId,
+            upgradeFromName: upgradeFrom.name,
+            valueDifference: item.valueDifference
+          };
+        }
+        return null;
+      }).filter(Boolean) : [];
+
+      return res.json({
+        success: true,
+        withinBudget: finalWithinBudget,
+        alternatives: finalAlternatives
+      });
+    }
+
+    // --- LOCAL DYNAMIC FALLBACK ADVICE ENGINE ---
+    // Sort within budget options by rating descending
+    const withinBudgetSorted = [...withinBudgetRaw].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    const finalWithinBudget = withinBudgetSorted.slice(0, 4).map(p => {
+      let reason = `A high-quality option in ${p.category} from ${p.brand} with an outstanding user rating of ⭐ ${p.rating}/5.0.`;
+      if (p.discountPrice > 0) {
+        reason += ` It is currently on a discount sale, saving you ₹${p.price - p.discountPrice}.`;
+      }
+      return { product: p, reason };
+    });
+
+    const finalAlternatives = [];
+    const pairedAltIds = new Set();
+
+    // Try to pair each of the top within-budget options with a slightly better upgrade
+    for (const item of finalWithinBudget) {
+      const baseProd = item.product;
+      const basePrice = baseProd.activePrice;
+
+      // Find an upgrade product in the same category that is more expensive but fits alternative constraints
+      const upgradeCandidate = alternativesRaw.find(alt => {
+        if (alt.category !== baseProd.category) return false;
+        if (alt.activePrice <= basePrice) return false;
+        if (pairedAltIds.has(alt.id || alt._id.toString())) return false;
+        return true;
+      });
+
+      if (upgradeCandidate) {
+        const altId = upgradeCandidate.id || upgradeCandidate._id.toString();
+        pairedAltIds.add(altId);
+
+        const baseName = baseProd.name.toLowerCase();
+        const altName = upgradeCandidate.name.toLowerCase();
+
+        let valueDifference = `This premium upgrade offers superior features, enhanced build materials, and better specifications relative to budget alternatives.`;
+
+        // Check for specific comparisons
+        if (baseName.includes('airpodes') || baseName.includes('141')) {
+          if (altName.includes('rockerz') || altName.includes('255')) {
+            valueDifference = `The boAt Rockerz 255 Pro+ features a secure neckband design and higher IPX7 water resistance, which is more durable for running and high-intensity gym sessions.`;
+          }
+        }
+        if (baseName.includes('z9 lite') || baseName.includes('vivo') || baseName.includes('t3x')) {
+          if (altName.includes('nord') || altName.includes('ce4')) {
+            valueDifference = `Stretching your budget to the OnePlus Nord CE4 Lite gives you a stunning AMOLED display, much faster 80W Supervooc charging, and dual stereo speakers.`;
+          }
+        }
+        if (baseName.includes('rockerz') || baseName.includes('airpodes') || baseName.includes('255')) {
+          if (altName.includes('1000xm5') || altName.includes('sony')) {
+            valueDifference = `The Sony WH-1000XM5 features world-class active noise cancellation (ANC), premium custom audio drivers, and a much longer 30-hour playback battery life.`;
+          }
+        }
+        if (baseName.includes('alchemist')) {
+          if (altName.includes('habits') || altName.includes('sapiens')) {
+            valueDifference = `Atomic Habits or Sapiens provides actionable non-fiction self-improvement strategies or dense historical reviews to boost daily learning habits.`;
+          }
+        }
+        if (baseName.includes('nike') || baseName.includes('trainer')) {
+          if (altName.includes('ultraboost')) {
+            valueDifference = `The Adidas Ultraboost 1.0 features signature full-length Boost cushioning and a Primeknit upper, providing superior running support and comfort.`;
+          }
+        }
+        if (baseName.includes('3m auto') || baseName.includes('car care')) {
+          if (altName.includes('lykos') || altName.includes('vacuum')) {
+            valueDifference = `The Lykos portable vacuum cleaner adds high-power active suction capabilities to help clean dry debris alongside the liquid polishes.`;
+          }
+        }
+        if (baseName.includes('solimo') || baseName.includes('bedsheet')) {
+          if (altName.includes('curtain') || altName.includes('decor')) {
+            valueDifference = `Complete your room redesign with matching room-darkening curtains to block external light and assure peaceful sleep.`;
+          }
+        }
+
+        // Fetch the full DB Product model format for upgradeCandidate
+        const dbAltProduct = await Product.findById(upgradeCandidate.id || upgradeCandidate._id);
+        const dbBaseProduct = await Product.findById(baseProd.id || baseProd._id);
+        
+        if (dbAltProduct && dbBaseProduct) {
+          finalAlternatives.push({
+            product: dbAltProduct,
+            upgradeFromId: dbBaseProduct._id.toString(),
+            upgradeFromName: dbBaseProduct.name,
+            valueDifference
+          });
+        }
+      }
+    }
+
+    return res.json({
+      success: true,
+      withinBudget: finalWithinBudget,
+      alternatives: finalAlternatives
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 

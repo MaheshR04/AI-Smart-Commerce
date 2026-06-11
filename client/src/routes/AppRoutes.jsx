@@ -17,6 +17,7 @@ import ProtectedRoute from '../components/ProtectedRoute';
 import NotFound from '../pages/NotFound';
 import Compare from '../pages/Compare';
 import GoalPlanner from '../pages/GoalPlanner';
+import BudgetAdvisor from '../pages/BudgetAdvisor';
 
 export const AppRoutes = () => {
   return (
@@ -30,6 +31,7 @@ export const AppRoutes = () => {
       <Route path="/products/:id" element={<ProductDetails />} />
       <Route path="/compare" element={<Compare />} />
       <Route path="/goal-planner" element={<GoalPlanner />} />
+      <Route path="/budget-advisor" element={<BudgetAdvisor />} />
 
       {/* Protected User Pages */}
       <Route
